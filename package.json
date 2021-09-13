@@ -1,6 +1,6 @@
 {
   "name": "@topmonks/postcube",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Shared PostCube constants",
   "main": "index.js",
   "scripts": {
