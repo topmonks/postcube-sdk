@@ -18,9 +18,9 @@ S ohledem na množství provozovatelů eshopů, platforem a dopravců jsou v Pos
 
 ## Eshop
 
-Jednou z funkcí PostCube je doprava zboží, nakoupného na eshopu, přímo do vaší schránky před domem.
+Jednou z funkcí PostCube je doprava zboží nakoupného na eshopu, přímo do vaší schránky před domem.
 
-Typicky zákazník vybere PostCube jako jeden ze spůsobů dopravy a zadá pouze číslo (ID) boxu s telefonním číslem majitele. Ostatní kontaktní informace se v posledním kroku košíku vyplní automaticky.
+Typicky zákazník vybere PostCube jako jeden ze způsobů dopravy a zadá pouze číslo (ID) boxu s telefonním číslem majitele. Ostatní kontaktní informace se v posledním kroku košíku vyplní automaticky.
 
 ![Integration with e-shop](eshop-integration.png)
 
@@ -38,7 +38,7 @@ Integrace s poskytovatelem dopravy se skládá ze dvou end-pointu a dvou webhook
 ### Strana dopravce
 1. POST na `transport-provider/prices` pro zjištění seznamu nabízených doprav a jejich cen.
     * Na EP je odeslána `pickup` a `delivery` adresa. Dopravce se na základě těchto bodů rozhodne, které (a zda nějaké) dopravy pro tuto trasu nabízí. 
-    * EP vrací seznam cen s jejich identifikátory, vybraný je poté odeslát při vytváření objednávky.
+    * EP vrací seznam cen s jejich identifikátory, vybraný je poté odeslán při vytváření objednávky.
     
 2. POST na `transport-provider/create-order` pro vytvoření objednávky na dopravu. 
     * Odesílá se opět `pickup` a `delivery` adresa.
