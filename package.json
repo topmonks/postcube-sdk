@@ -4,7 +4,8 @@
   "description": "Shared PostCube constants",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot"
   },
   "keywords": [],
   "author": "TopMonks <info@topmonks.com>",

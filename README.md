@@ -18,6 +18,10 @@ Alternativně je možné zámek otevřít pomocí jednorázového kódu vygenero
 
 S ohledem na množství provozovatelů eshopů, platforem a dopravců jsou v PostCube vytvořeny HTTP end-pointy specificky pro každy subjekt zvlášť. Používají stejné nebo podobné funkce interně, ale na venek jsou přizpůsobeny integrované straně.
 
+Životní cyklus zásilky je řízen FSM (Finite State Machine)místem, kterému podléhá integrovaná strana stejně jako PostCube.  
+
+![Delivery Lifecycle](fsm.png)
+
 ## Eshop
 
 Jednou z funkcí PostCube je doprava zboží nakoupného na eshopu, přímo do vaší schránky před domem.
@@ -53,3 +57,8 @@ Integrace s poskytovatelem dopravy se skládá ze dvou end-pointu a dvou webhook
 
 ![Transport provider integration](transport-integration.png)
 
+
+----
+
+### Delivery Lifecycle
+![State machine visualization](fsm.png)
