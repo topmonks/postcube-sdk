@@ -5,12 +5,14 @@
   "scripts": {
     "test": "open https://sdk.postcube.cz/examples/unlock-device",
     "start": "snowpack dev",
-    "build": "snowpack build"
+    "build": "snowpack build",
+    "postbuild": "node scripts/fix-github-pages-ignored-files.js"
   },
   "author": "TopMonks",
   "license": "MIT",
   "devDependencies": {
     "@snowpack/plugin-react-refresh": "^2.5.0",
+    "recursive-readdir": "^2.2.2",
     "snowpack": "3.8.8"
   },
   "dependencies": {
