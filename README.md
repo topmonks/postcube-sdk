@@ -56,9 +56,3 @@ Integrace s poskytovatelem dopravy se skládá ze dvou end-pointu a dvou webhook
 1. POST webhook pro aktualizaci stavu dopravy ve chvíli, kdy je zásilka v rukou dopravce (např. doručujeme + ETA). 
 
 ![Transport provider integration](transport-integration.png)
-
-
-----
-
-### Delivery Lifecycle
-![State machine visualization](fsm.png)
