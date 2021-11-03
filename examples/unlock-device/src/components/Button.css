@@ -15,7 +15,17 @@
   border: 2px solid var(--color-primary);
 }
 
-.postcube-button > button {
+.postcube-button.postcube-button--disabled {
+  color: var(--color-grey);
+  background-color: var(--color-silver);
+  --loader-color: var(--color-grey);
+}
+
+.postcube-button.postcube-button--disabled > button {
+  cursor: not-allowed;
+}
+
+.postcube-button>button {
   color: var(--color-white);
   font-size: var(--font-size-m);
   font-weight: 400;
@@ -27,6 +37,7 @@
   white-space: nowrap;
   border: 0 none;
   background-color: transparent;
+  cursor: pointer;
 }
 
 .postcube-button.postcube-button--secondary > button {

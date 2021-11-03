@@ -1,12 +1,9 @@
 import React from "../snowpack/pkg/react.js";
 import cs from "../snowpack/pkg/classnames.js";
 import "./Loader.css.proxy.js";
-export default function Loader({className, text, mini, light, ghost, centered}) {
+export default function Loader({className, text, centered}) {
   return /* @__PURE__ */ React.createElement("div", {
     className: cs(className, "loader-component delayed-visibility", {
-      "loader-component--mini": mini,
-      "loader-component--light": light,
-      "loader-component--ghost": ghost,
       "loader-component--centered": centered
     })
   }, /* @__PURE__ */ React.createElement("svg", {
@@ -17,5 +14,5 @@ export default function Loader({className, text, mini, light, ghost, centered}) 
     className: "loader-component__symbol"
   }, /* @__PURE__ */ React.createElement("path", {
     d: "M0 0v16l8 8h16V8l-8-8z"
-  })), mini ? null : text || "Načítám...");
+  })), text || "Načítám...");
 }
