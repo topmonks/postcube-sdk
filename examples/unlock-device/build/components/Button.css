@@ -1,10 +1,7 @@
 .postcube-button {
   background-color: var(--color-primary);
-  border-radius: 8px;
-  box-shadow: 0px 1px 1px
-  #1d203b1a , 0px 2px 2px
-  #1d203b1a , 0px 4px 4px
-  #1d203b1a;
+  border-radius: 4px;
+  box-shadow: 0px 5px 20px #E5E8EE;
   display: flex;
   align-items: center;
   height: 44px;

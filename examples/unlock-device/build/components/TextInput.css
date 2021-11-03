@@ -1,6 +1,5 @@
 .postcube-text-input {
   background-color: var(--color-white);
-  border-radius: 8px;
   width: 100%;
   box-sizing: border-box;
   margin: 4px;
@@ -8,7 +7,10 @@
 
 .postcube-text-input > span {
   display: block;
-  padding-bottom: 4px;
+  padding-bottom: 5px;
+  font-size: 18px;
+  line-height: 22px;
+  letter-spacing: -0.165px;
 }
 
 .postcube-text-input > input {
@@ -23,5 +25,5 @@
   border: 1px solid #B0B4CC;
   border-radius: 4px;
   background-color: transparent;
-
+  box-sizing: border-box;
 }

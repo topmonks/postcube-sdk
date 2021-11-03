@@ -3,6 +3,8 @@ import Button from "./components/Button.js";
 import TextInput from "./components/TextInput.js";
 import usePostCubeDevice from "./hooks/usePostCubeDevice.js";
 import "./Application.css.proxy.js";
+import Header from "./components/Header.js";
+import Loader from "./components/Loader.js";
 const validate = (unlockStringCommand) => Boolean(unlockStringCommand);
 function Application() {
   const [unlockStringCommand, setUnlockStringCommand] = useState("");
@@ -15,10 +17,10 @@ function Application() {
     if (!device)
       return console.error("No PostCube device");
   }, []);
-  return /* @__PURE__ */ React.createElement("form", {
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, null), /* @__PURE__ */ React.createElement("form", {
     className: "application",
     onSubmit: handleSubmit
-  }, /* @__PURE__ */ React.createElement("h1", null, "Unlock PostCube"), /* @__PURE__ */ React.createElement("div", {
+  }, /* @__PURE__ */ React.createElement("h1", null, "Unlock Device"), /* @__PURE__ */ React.createElement("div", {
     className: "mb16"
   }, /* @__PURE__ */ React.createElement(TextInput, {
     label: "Enter the Command",
@@ -28,11 +30,14 @@ function Application() {
     className: "m16",
     disabled: !validate(unlockStringCommand),
     type: "submit"
-  }, "Unlock"), /* @__PURE__ */ React.createElement(Button, {
+  }, false ? /* @__PURE__ */ React.createElement(Loader, {
+    text: "Otevírám ..",
+    centered: true
+  }) : "Unlock"), /* @__PURE__ */ React.createElement(Button, {
     className: "m16",
     secondary: true,
     name: "paste-and-unlock",
     type: "submit"
-  }, "Paste & Unlock"));
+  }, "Paste & Unlock")));
 }
 export default Application;
