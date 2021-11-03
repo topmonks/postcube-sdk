@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Real locker devicer unlocking presented by code",
   "scripts": {
-    "test": "open https://sdk.postcube.cz/examples/unlock-device",
+    "test": "open https://sdk.postcube.cz/examples/unlock-device/build/",
     "start": "snowpack dev",
     "build": "snowpack build",
     "postbuild": "node scripts/fix-github-pages-ignored-files.js"
