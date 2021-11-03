@@ -29,7 +29,7 @@ function Application() {
 
   return (
     <>
-      <Header />
+      <Header logoLink='https://sdk.postcube.cz/examples/unlock-device/build/' />
       <form className='application' onSubmit={handleSubmit}>
         <h1>Unlock Device</h1>
         <div className='mb16'>

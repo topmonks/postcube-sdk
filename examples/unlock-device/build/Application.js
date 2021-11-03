@@ -17,7 +17,9 @@ function Application() {
     if (!device)
       return console.error("No PostCube device");
   }, []);
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, null), /* @__PURE__ */ React.createElement("form", {
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, {
+    logoLink: "https://sdk.postcube.cz/examples/unlock-device/build/"
+  }), /* @__PURE__ */ React.createElement("form", {
     className: "application",
     onSubmit: handleSubmit
   }, /* @__PURE__ */ React.createElement("h1", null, "Unlock Device"), /* @__PURE__ */ React.createElement("div", {
