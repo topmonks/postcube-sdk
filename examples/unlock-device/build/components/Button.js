@@ -1,5 +1,5 @@
-import React from "../_snowpack/pkg/react.js";
-import cs from "../_snowpack/pkg/classnames.js";
+import React from "../snowpack/pkg/react.js";
+import cs from "../snowpack/pkg/classnames.js";
 import "./Button.css.proxy.js";
 function Button({secondary, children, className, ...pass}) {
   return /* @__PURE__ */ React.createElement("div", {

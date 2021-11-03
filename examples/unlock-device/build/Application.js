@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from "./_snowpack/pkg/react.js";
+import React, {useCallback, useState} from "./snowpack/pkg/react.js";
 import Button from "./components/Button.js";
 import TextInput from "./components/TextInput.js";
 import usePostCubeDevice from "./hooks/usePostCubeDevice.js";

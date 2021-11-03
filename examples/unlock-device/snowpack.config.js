@@ -16,6 +16,7 @@ module.exports = {
     /* ... */
   },
   buildOptions: {
-    /* ... */
+    baseUrl: "/examples/unlock-device",
+    metaUrlPath: "snowpack",
   },
 };
