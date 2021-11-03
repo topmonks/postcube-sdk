@@ -1,0 +1,9 @@
+.Header {
+    background-color: var(--color-primary);
+    padding: 16px 24px;
+    padding-top: calc(env(safe-area-inset-top) + 24px);
+}
+
+.Header svg {
+    fill: var(--color-white);
+}
