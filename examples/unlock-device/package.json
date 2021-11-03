@@ -1,0 +1,20 @@
+{
+  "name": "unlock-device-example",
+  "version": "0.0.1",
+  "description": "Real locker devicer unlocking presented by code",
+  "scripts": {
+    "test": "open https://sdk.postcube.cz/examples/unlock-device",
+    "start": "snowpack dev",
+    "build": "snowpack build"
+  },
+  "author": "TopMonks",
+  "license": "MIT",
+  "devDependencies": {
+    "@snowpack/plugin-react-refresh": "^2.5.0",
+    "snowpack": "3.8.8"
+  },
+  "dependencies": {
+    "classnames": "^2.3.1",
+    "react": "^17.0.2"
+  }
+}

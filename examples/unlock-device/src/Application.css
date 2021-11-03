@@ -1,0 +1,22 @@
+.application {
+  position: absolute;
+  inset: 0;
+}
+
+.application h1 {
+  text-align: center;
+}
+
+.application form {
+  height: 100%;
+  margin: 0 auto;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.application form > * {
+  width: 100%;
+}

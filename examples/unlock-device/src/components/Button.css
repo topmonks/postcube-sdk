@@ -1,0 +1,37 @@
+.postcube-button {
+  background-color: var(--color-primary);
+  border-radius: 8px;
+  box-shadow: 0px 1px 1px
+  #1d203b1a , 0px 2px 2px
+  #1d203b1a , 0px 4px 4px
+  #1d203b1a;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  width: 100%;
+  margin: 4px;
+  box-sizing: border-box;
+}
+
+.postcube-button.postcube-button--secondary {
+  background-color: var(--color-secondary);
+  border: 2px solid var(--color-primary);
+}
+
+.postcube-button > button {
+  color: var(--color-white);
+  font-size: var(--font-size-m);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 20px;
+  height: 100%;
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  border: 0 none;
+  background-color: transparent;
+}
+
+.postcube-button.postcube-button--secondary > button {
+  color: var(--color-primary);
+}
