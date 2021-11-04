@@ -54,16 +54,19 @@ function Application() {
     alert(`Error occurred: ${error.toString()}`);
   };
 
-  const handleSearchForDevice = useCallback((event) => {
-    event.preventDefault();
-    searchForDevice(`PostCube ${formValues.deviceId}`)
-      .then(updateFormValues)
-      .catch(handleError);
-  }, [formValues]);
+  const handleSearchForDevice = useCallback(
+    (event) => {
+      event.preventDefault();
+      searchForDevice(`PostCube ${formValues.deviceId}`)
+        .then(updateFormValues)
+        .catch(handleError);
+    },
+    [formValues]
+  );
 
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
-    if (!device) return console.error("No PostCube device");
+    if (!formValues?.device) return handleError(new Error("Device not found"));
     connectToDevice(formValues?.device)
       .then(listenToMessages)
       .then(sendUnlockCommand)
