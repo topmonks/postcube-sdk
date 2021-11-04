@@ -6,23 +6,37 @@ import "./Application.css.proxy.js";
 import Header from "./components/Header.js";
 import Loader from "./components/Loader.js";
 import Slot from "./components/Slot.js";
-const validate = ({unlockStringCommand}) => Boolean(unlockStringCommand);
+const validate = ({unlockStringCommand, deviceId}) => Boolean(unlockStringCommand) && unlockStringCommand.length > 42 && Boolean(deviceId) && deviceId.length >= 6;
 function Application() {
   const [formValues, setFormValues] = useState({
     deviceId: "",
-    unlockStringCommand: ""
+    unlockStringCommand: "",
+    device: null
   });
-  const device = usePostCubeDevice();
   const updateFormValues = useCallback(({target: {name, value}}) => {
     setFormValues({...formValues, [name]: value});
   }, [formValues]);
+  const {
+    searchForDevice,
+    connectToDevice,
+    listenToMessages,
+    sendUnlockCommand
+  } = usePostCubeDevice();
+  const handleSuccess = () => {
+    alert("Device unlocked successfully!");
+  };
+  const handleError = (error) => {
+    alert(`Error occurred: ${error.toString()}`);
+  };
   const handleSearchForDevice = useCallback((event) => {
     event.preventDefault();
-  }, []);
+    searchForDevice(`PostCube ${formValues.deviceId}`).then(updateFormValues).catch(handleError);
+  }, [formValues]);
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
-    if (!device)
-      return console.error("No PostCube device");
+    if (!formValues?.device)
+      return handleError(new Error("Device not found"));
+    connectToDevice(formValues?.device).then(listenToMessages).then(sendUnlockCommand).then(handleSuccess).catch(handleError);
   }, []);
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, {
     logoLink: "https://sdk.postcube.cz/examples/unlock-device/build/"
@@ -38,7 +52,7 @@ function Application() {
     onChange: updateFormValues
   })), /* @__PURE__ */ React.createElement(Slot, {
     className: "mb8"
-  }, /* @__PURE__ */ React.createElement("div", null, "jakožeslot"), /* @__PURE__ */ React.createElement("a", {
+  }, formValues.device ? /* @__PURE__ */ React.createElement("div", null, formValues.device.name) : /* @__PURE__ */ React.createElement("a", {
     href: "#",
     onClick: handleSearchForDevice
   }, "Vyhledat zařízení v okolí")), /* @__PURE__ */ React.createElement("div", {

@@ -8,7 +8,8 @@ function Button({secondary, children, className, disabled, ...pass}) {
       "postcube-button--disabled": disabled
     })
   }, /* @__PURE__ */ React.createElement("button", {
-    ...pass
+    ...pass,
+    disabled
   }, children));
 }
 export default Button;
