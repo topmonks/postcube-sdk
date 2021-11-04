@@ -37,3 +37,7 @@ export function getCharacteristic(service, characteristic) {
 export function writeCharacteristic(characteristic, value) {
   return characteristic.writeValue(value);
 }
+
+export function isDeviceConnected(device) {
+  return device.gatt.connected;
+}
