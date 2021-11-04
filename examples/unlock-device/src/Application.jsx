@@ -5,6 +5,7 @@ import usePostCubeDevice from "./hooks/usePostCubeDevice";
 import "./Application.css";
 import Header from "./components/Header";
 import Loader from "./components/Loader";
+import Slot from "./components/Slot";
 
 const validate = ({ unlockStringCommand }) => Boolean(unlockStringCommand);
 
@@ -26,9 +27,12 @@ function Application() {
     unlockStringCommand: "",
   });
   const device = usePostCubeDevice();
-  const updateFormValues = useCallback(({ target: { name, value } }) => {
-    setFormValues({ ...formValues, [name]: value });
-  }, [formValues]);
+  const updateFormValues = useCallback(
+    ({ target: { name, value } }) => {
+      setFormValues({ ...formValues, [name]: value });
+    },
+    [formValues]
+  );
 
   const handleSearchForDevice = useCallback((event) => {
     event.preventDefault();
@@ -53,20 +57,14 @@ function Application() {
             onChange={updateFormValues}
           />
         </div>
-        <div
-          className="mb8"
-          style={{
-            textAlign: "center",
-            padding: 16,
-            boxSizing: "border-box",
-            border: "1px solid var(--color-grey)",
-          }}
-        >
+
+        <Slot className="mb8">
           <div>jakožeslot</div>
           <a href="#" onClick={handleSearchForDevice}>
             Vyhledat zařízení v okolí
           </a>
-        </div>
+        </Slot>
+
         <div className="mb16">
           <TextInput
             label="Unlock Command"

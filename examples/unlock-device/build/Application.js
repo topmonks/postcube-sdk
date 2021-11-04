@@ -5,13 +5,20 @@ import usePostCubeDevice from "./hooks/usePostCubeDevice.js";
 import "./Application.css.proxy.js";
 import Header from "./components/Header.js";
 import Loader from "./components/Loader.js";
-const validate = (unlockStringCommand) => Boolean(unlockStringCommand);
+import Slot from "./components/Slot.js";
+const validate = ({unlockStringCommand}) => Boolean(unlockStringCommand);
 function Application() {
-  const [unlockStringCommand, setUnlockStringCommand] = useState("");
-  const handleUnlockStringCommandChange = useCallback(({target: {value}}) => {
-    setUnlockStringCommand(value);
-  }, []);
+  const [formValues, setFormValues] = useState({
+    deviceId: "",
+    unlockStringCommand: ""
+  });
   const device = usePostCubeDevice();
+  const updateFormValues = useCallback(({target: {name, value}}) => {
+    setFormValues({...formValues, [name]: value});
+  }, [formValues]);
+  const handleSearchForDevice = useCallback((event) => {
+    event.preventDefault();
+  }, []);
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
     if (!device)
@@ -23,23 +30,31 @@ function Application() {
     className: "application",
     onSubmit: handleSubmit
   }, /* @__PURE__ */ React.createElement("h1", null, "Unlock Device"), /* @__PURE__ */ React.createElement("div", {
+    className: "mb8"
+  }, /* @__PURE__ */ React.createElement(TextInput, {
+    label: "Device ID",
+    value: formValues.deviceId,
+    name: "deviceId",
+    onChange: updateFormValues
+  })), /* @__PURE__ */ React.createElement(Slot, {
+    className: "mb8"
+  }, /* @__PURE__ */ React.createElement("div", null, "jakožeslot"), /* @__PURE__ */ React.createElement("a", {
+    href: "#",
+    onClick: handleSearchForDevice
+  }, "Vyhledat zařízení v okolí")), /* @__PURE__ */ React.createElement("div", {
     className: "mb16"
   }, /* @__PURE__ */ React.createElement(TextInput, {
-    label: "Enter the Command",
-    value: unlockStringCommand,
-    onChange: handleUnlockStringCommandChange
+    label: "Unlock Command",
+    value: formValues.unlockStringCommand,
+    name: "unlockStringCommand",
+    onChange: updateFormValues
   })), /* @__PURE__ */ React.createElement(Button, {
     className: "m16",
-    disabled: !validate(unlockStringCommand),
+    disabled: !validate(formValues),
     type: "submit"
   }, false ? /* @__PURE__ */ React.createElement(Loader, {
     text: "Otevírám ..",
     centered: true
-  }) : "Unlock"), /* @__PURE__ */ React.createElement(Button, {
-    className: "m16",
-    secondary: true,
-    name: "paste-and-unlock",
-    type: "submit"
-  }, "Paste & Unlock")));
+  }) : "Unlock")));
 }
 export default Application;
