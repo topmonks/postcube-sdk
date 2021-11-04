@@ -7,11 +7,11 @@ import Header from "./components/Header";
 import Loader from "./components/Loader";
 import Slot from "./components/Slot";
 
-const validate = ({ unlockStringCommand, deviceId }) =>
+const validate = ({ unlockStringCommand, deviceName }) =>
   Boolean(unlockStringCommand) &&
   unlockStringCommand.length > 42 &&
-  Boolean(deviceId) &&
-  deviceId.length >= 6;
+  Boolean(deviceName) &&
+  "PostCube ".length + deviceName.length >= 6;
 
 /**
  * Single screen application.
@@ -27,7 +27,7 @@ const validate = ({ unlockStringCommand, deviceId }) =>
  */
 function Application() {
   const [formValues, setFormValues] = useState({
-    deviceId: "",
+    deviceName: "PostCube ",
     unlockStringCommand: "",
     device: null,
   });
@@ -51,14 +51,17 @@ function Application() {
   };
 
   const handleError = (error) => {
+    console.trace(error);
     alert(`Error occurred: ${error.toString()}`);
   };
 
   const handleSearchForDevice = useCallback(
     (event) => {
       event.preventDefault();
-      searchForDevice(`PostCube ${formValues.deviceId}`)
-        .then(updateFormValues)
+      searchForDevice(formValues.deviceName)
+        .then((device) => {
+          setFormValues({ ...formValues, device, deviceName: device?.name });
+        })
         .catch(handleError);
     },
     [formValues]
@@ -81,23 +84,26 @@ function Application() {
         <h1>Unlock Device</h1>
         <div className="mb8">
           <TextInput
-            label="Device ID"
-            value={formValues.deviceId}
-            name="deviceId"
+            label="Device name"
+            value={formValues.deviceName}
+            name="deviceName"
             onChange={updateFormValues}
           />
         </div>
 
         <Slot className="mb8">
-          {formValues.device ? (
-            <div>{formValues.device.name}</div>
-          ) : (
-            <a href="#" onClick={handleSearchForDevice}>
-              Vyhledat zařízení v okolí
-            </a>
-          )}
-        </Slot>
+          <div className="mb8">
+            {formValues.device ? (
+              <>{formValues.device.name} connected</>
+            ) : (
+              "No device yet"
+            )}
+          </div>
 
+          <a href="#" onClick={handleSearchForDevice}>
+            Vyhledat zařízení v okolí
+          </a>
+        </Slot>
         <div className="mb16">
           <TextInput
             label="Unlock Command"

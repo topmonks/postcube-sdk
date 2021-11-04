@@ -1,5 +1,6 @@
 {
   "imports": {
+    "@topmonks/postcube/ble-box": "./@topmonks/postcube/ble-box.js",
     "classnames": "./classnames.js",
     "react": "./react.js",
     "react-dom": "./react-dom.js"

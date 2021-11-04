@@ -6,10 +6,10 @@ import "./Application.css.proxy.js";
 import Header from "./components/Header.js";
 import Loader from "./components/Loader.js";
 import Slot from "./components/Slot.js";
-const validate = ({unlockStringCommand, deviceId}) => Boolean(unlockStringCommand) && unlockStringCommand.length > 42 && Boolean(deviceId) && deviceId.length >= 6;
+const validate = ({unlockStringCommand, deviceName}) => Boolean(unlockStringCommand) && unlockStringCommand.length > 42 && Boolean(deviceName) && "PostCube ".length + deviceName.length >= 6;
 function Application() {
   const [formValues, setFormValues] = useState({
-    deviceId: "",
+    deviceName: "PostCube ",
     unlockStringCommand: "",
     device: null
   });
@@ -26,11 +26,14 @@ function Application() {
     alert("Device unlocked successfully!");
   };
   const handleError = (error) => {
+    console.trace(error);
     alert(`Error occurred: ${error.toString()}`);
   };
   const handleSearchForDevice = useCallback((event) => {
     event.preventDefault();
-    searchForDevice(`PostCube ${formValues.deviceId}`).then(updateFormValues).catch(handleError);
+    searchForDevice(formValues.deviceName).then((device) => {
+      setFormValues({...formValues, device, deviceName: device?.name});
+    }).catch(handleError);
   }, [formValues]);
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
@@ -46,13 +49,15 @@ function Application() {
   }, /* @__PURE__ */ React.createElement("h1", null, "Unlock Device"), /* @__PURE__ */ React.createElement("div", {
     className: "mb8"
   }, /* @__PURE__ */ React.createElement(TextInput, {
-    label: "Device ID",
-    value: formValues.deviceId,
-    name: "deviceId",
+    label: "Device name",
+    value: formValues.deviceName,
+    name: "deviceName",
     onChange: updateFormValues
   })), /* @__PURE__ */ React.createElement(Slot, {
     className: "mb8"
-  }, formValues.device ? /* @__PURE__ */ React.createElement("div", null, formValues.device.name) : /* @__PURE__ */ React.createElement("a", {
+  }, /* @__PURE__ */ React.createElement("div", {
+    className: "mb8"
+  }, formValues.device ? /* @__PURE__ */ React.createElement(React.Fragment, null, formValues.device.name, " connected") : "No device yet"), /* @__PURE__ */ React.createElement("a", {
     href: "#",
     onClick: handleSearchForDevice
   }, "Vyhledat zařízení v okolí")), /* @__PURE__ */ React.createElement("div", {
