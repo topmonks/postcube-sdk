@@ -10,7 +10,7 @@ function Button({ secondary, children, className, disabled, ...pass }) {
         "postcube-button--disabled": disabled,
       })}
     >
-      <button {...pass}>{children}</button>
+      <button {...pass} disabled={disabled}>{children}</button>
     </div>
   );
 }
