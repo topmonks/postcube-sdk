@@ -7,7 +7,11 @@ import Header from "./components/Header";
 import Loader from "./components/Loader";
 import Slot from "./components/Slot";
 
-const validate = ({ unlockStringCommand }) => Boolean(unlockStringCommand);
+const validate = ({ unlockStringCommand, deviceId }) =>
+  Boolean(unlockStringCommand) &&
+  unlockStringCommand.length > 42 &&
+  Boolean(deviceId) &&
+  deviceId.length >= 6;
 
 /**
  * Single screen application.
@@ -25,8 +29,9 @@ function Application() {
   const [formValues, setFormValues] = useState({
     deviceId: "",
     unlockStringCommand: "",
+    device: null,
   });
-  const device = usePostCubeDevice();
+
   const updateFormValues = useCallback(
     ({ target: { name, value } }) => {
       setFormValues({ ...formValues, [name]: value });
@@ -34,14 +39,36 @@ function Application() {
     [formValues]
   );
 
+  const {
+    searchForDevice,
+    connectToDevice,
+    listenToMessages,
+    sendUnlockCommand,
+  } = usePostCubeDevice();
+
+  const handleSuccess = () => {
+    alert("Device unlocked successfully!");
+  };
+
+  const handleError = (error) => {
+    alert(`Error occurred: ${error.toString()}`);
+  };
+
   const handleSearchForDevice = useCallback((event) => {
     event.preventDefault();
-  }, []);
+    searchForDevice(`PostCube ${formValues.deviceId}`)
+      .then(updateFormValues)
+      .catch(handleError);
+  }, [formValues]);
 
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
     if (!device) return console.error("No PostCube device");
-    // ..
+    connectToDevice(formValues?.device)
+      .then(listenToMessages)
+      .then(sendUnlockCommand)
+      .then(handleSuccess)
+      .catch(handleError);
   }, []);
 
   return (
@@ -59,10 +86,13 @@ function Application() {
         </div>
 
         <Slot className="mb8">
-          <div>jakožeslot</div>
-          <a href="#" onClick={handleSearchForDevice}>
-            Vyhledat zařízení v okolí
-          </a>
+          {formValues.device ? (
+            <div>{formValues.device.name}</div>
+          ) : (
+            <a href="#" onClick={handleSearchForDevice}>
+              Vyhledat zařízení v okolí
+            </a>
+          )}
         </Slot>
 
         <div className="mb16">

@@ -12,7 +12,8 @@
 
 ---
 
-1. using web browser (💯 on Android devices)
+1. using web browser (💯 on Android devices, 0️⃣ on iOS devices)
+  * https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API
 2. using Node/Bash script (TBD)
 3. using native app (TBD)  
   - on Android: ❌  
