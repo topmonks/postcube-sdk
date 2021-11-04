@@ -8,7 +8,8 @@ import Loader from "./components/Loader.js";
 import Slot from "./components/Slot.js";
 const validate = ({unlockStringCommand, deviceFilter: deviceName}) => Boolean(unlockStringCommand) && unlockStringCommand.length > 42 && Boolean(deviceName) && "PostCube ".length + deviceName.length >= 6;
 function Application() {
-  const [device, setDevice] = useState(null);
+  const [foundDevice, setFoundDevice] = useState(null);
+  const [unlocking, setUnlocking] = useState(false);
   const [formValues, setFormValues] = useState({
     deviceFilter: "PostCube ",
     unlockStringCommand: ""
@@ -19,9 +20,9 @@ function Application() {
   const {
     searchForDevice,
     connectToDevice,
-    listenToMessages,
     sendUnlockCommand,
-    isDeviceConnected
+    isDeviceConnected,
+    disconnectFromDevice
   } = usePostCubeDevice();
   const handleSuccess = () => {
     alert("Device unlocked successfully!");
@@ -32,16 +33,22 @@ function Application() {
   };
   const handleSearchForDevice = useCallback((event) => {
     event.preventDefault();
-    searchForDevice(formValues.deviceFilter).then(setDevice).catch(handleError);
+    searchForDevice(formValues.deviceFilter).then(setFoundDevice).catch(handleError);
   }, [formValues]);
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
-    if (!device)
+    if (!foundDevice)
       return handleError(new Error("Device not found"));
-    connectToDevice(device).then((device2) => {
-      setDevice(device2);
-      return device2;
-    }).then(listenToMessages).then(sendUnlockCommand).then(handleSuccess).catch(handleError);
+    setUnlocking(true);
+    connectToDevice(foundDevice).then((device) => {
+      setFoundDevice(device);
+      return device;
+    }).then((device) => {
+      const command = "fok";
+      return sendUnlockCommand(device, command);
+    }).then((device) => disconnectFromDevice(device)).catch(handleError).finally(() => {
+      setUnlocking(false);
+    });
   }, [formValues]);
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, {
     logoLink: "https://sdk.postcube.cz/examples/unlock-device/build/"
@@ -59,7 +66,7 @@ function Application() {
     className: "mb8"
   }, /* @__PURE__ */ React.createElement("div", {
     className: "mb8"
-  }, device && /* @__PURE__ */ React.createElement(React.Fragment, null, device.name, " ", isDeviceConnected(device) ? "připojen" : "nalezen")), /* @__PURE__ */ React.createElement("a", {
+  }, foundDevice && /* @__PURE__ */ React.createElement(React.Fragment, null, foundDevice.name, " ", isDeviceConnected(foundDevice) ? "připojen" : "nalezen")), /* @__PURE__ */ React.createElement("a", {
     href: "#",
     onClick: handleSearchForDevice
   }, "Vyhledat zařízení v okolí")), /* @__PURE__ */ React.createElement("div", {
@@ -71,7 +78,7 @@ function Application() {
     onChange: updateFormValues
   })), /* @__PURE__ */ React.createElement(Button, {
     className: "m16",
-    disabled: !validate(formValues),
+    disabled: !validate(formValues) || unlocking,
     type: "submit"
   }, false ? /* @__PURE__ */ React.createElement(Loader, {
     text: "Otevírám ..",

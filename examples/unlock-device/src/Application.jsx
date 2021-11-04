@@ -26,7 +26,8 @@ const validate = ({ unlockStringCommand, deviceFilter: deviceName }) =>
  * @returns
  */
 function Application() {
-  const [device, setDevice] = useState(null);
+  const [foundDevice, setFoundDevice] = useState(null);
+  const [unlocking, setUnlocking] = useState(false);
   const [formValues, setFormValues] = useState({
     deviceFilter: "PostCube ",
     unlockStringCommand: "",
@@ -42,9 +43,9 @@ function Application() {
   const {
     searchForDevice,
     connectToDevice,
-    listenToMessages,
     sendUnlockCommand,
     isDeviceConnected,
+    disconnectFromDevice,
   } = usePostCubeDevice();
 
   const handleSuccess = () => {
@@ -60,7 +61,7 @@ function Application() {
     (event) => {
       event.preventDefault();
       searchForDevice(formValues.deviceFilter)
-        .then(setDevice)
+        .then(setFoundDevice)
         .catch(handleError);
     },
     [formValues]
@@ -69,17 +70,23 @@ function Application() {
   const handleSubmit = useCallback(
     (event) => {
       event.preventDefault();
-      if (!device) return handleError(new Error("Device not found"));
+      if (!foundDevice) return handleError(new Error("Device not found"));
+      setUnlocking(true);
 
-      connectToDevice(device)
+      connectToDevice(foundDevice)
         .then((device) => {
-          setDevice(device);
+          setFoundDevice(device);
           return device;
         })
-        .then(listenToMessages)
-        .then(sendUnlockCommand)
-        .then(handleSuccess)
-        .catch(handleError);
+        .then((device) => {
+          const command = "fok"; // TODO decode: formValues.unlockStringCommand
+          return sendUnlockCommand(device, command);
+        })
+        .then((device) => disconnectFromDevice(device))
+        .catch(handleError)
+        .finally(() => {
+          setUnlocking(false);
+        });
     },
     [formValues]
   );
@@ -100,10 +107,10 @@ function Application() {
 
         <Slot className="mb8">
           <div className="mb8">
-            {device && (
+            {foundDevice && (
               <>
-                {device.name}{" "}
-                {isDeviceConnected(device) ? "připojen" : "nalezen"}
+                {foundDevice.name}{" "}
+                {isDeviceConnected(foundDevice) ? "připojen" : "nalezen"}
               </>
             )}
           </div>
@@ -120,7 +127,11 @@ function Application() {
             onChange={updateFormValues}
           />
         </div>
-        <Button className="m16" disabled={!validate(formValues)} type="submit">
+        <Button
+          className="m16"
+          disabled={!validate(formValues) || unlocking}
+          type="submit"
+        >
           {false ? <Loader text="Otevírám .." centered /> : "Unlock"}
         </Button>
       </form>
