@@ -29,24 +29,24 @@ function Application() {
 
   return (
     <>
-      <Header logoLink='https://sdk.postcube.cz/examples/unlock-device/build/' />
-      <form className='application' onSubmit={handleSubmit}>
+      <Header logoLink="https://sdk.postcube.cz/examples/unlock-device/build/" />
+      <form className="application" onSubmit={handleSubmit}>
         <h1>Unlock Device</h1>
-        <div className='mb16'>
+        <div className="mb16">
           <TextInput
-            label='Enter the Command'
+            label="Enter the Command"
             value={unlockStringCommand}
             onChange={handleUnlockStringCommandChange}
           />
         </div>
         <Button
-          className='m16'
+          className="m16"
           disabled={!validate(unlockStringCommand)}
-          type='submit'
+          type="submit"
         >
-          {false ? <Loader text='Otevírám ..' centered /> : "Unlock"}
+          {false ? <Loader text="Otevírám .." centered /> : "Unlock"}
         </Button>
-        <Button className='m16' secondary name='paste-and-unlock' type='submit'>
+        <Button className="m16" secondary name="paste-and-unlock" type="submit">
           Paste & Unlock
         </Button>
       </form>

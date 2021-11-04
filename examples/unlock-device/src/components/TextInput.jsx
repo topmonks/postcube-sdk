@@ -2,7 +2,7 @@ import React from "react";
 import cs from "classnames";
 import "./TextInput.css";
 
-function TextInput({ secondary, label,  className, ...pass }) {
+function TextInput({ secondary, label, className, ...pass }) {
   return (
     <label
       className={cs(
