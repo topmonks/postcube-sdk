@@ -1,6 +1,5 @@
 ---
 title: PostCube SDK
-layout: default
 ---
 
 # PostCube Integration
