@@ -1,5 +1,6 @@
 ---
-title: Postcube API Docs
+title: PostCube API Docs
+layout: default
 ---
 
 # API Docs
