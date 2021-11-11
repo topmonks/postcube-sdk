@@ -1,3 +1,6 @@
+---
+title: Postcube API Docs
+---
 
 # API Docs
 
