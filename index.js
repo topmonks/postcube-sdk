@@ -9,6 +9,7 @@ module.exports = {
   DELIVERY: require("./delivery"),
   BOX: require("./box"),
   BLE_BOX: require("./ble-box"),
+  ORGANISATION: require("./organisation"),
   StateMachine: require("./state-machine"),
   ...require("./scheme"),
 };
