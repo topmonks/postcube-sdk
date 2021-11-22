@@ -1,0 +1,28 @@
+{% if include.item.isSubmenu %}
+    <div class="nav-submenu">
+        <a
+            class="page-link"
+            href="{{ include.item.url | relative_url }}"
+        >
+            {{ include.item.title | escape }}
+        </a>
+
+        <div class="nav-submenu-items">
+            {% for path in page_paths %}
+                {% assign item = site.pages | where: "path", path | first %}
+                {% if item.isMenuItem and item.submenu == include.item.slug %}
+                    <a class="page-link nav-submenu-item" href="{{ item.url | relative_url }}">
+                        {{ item.title | escape }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <a
+        class="page-link"
+        href="{{ include.item.url | relative_url }}"
+    >
+        {{ include.item.title | escape }}
+    </a>
+{% endif %}

@@ -1,0 +1,26 @@
+---
+title: Transport providers
+slug: transport-providers
+submenu: integration
+isMenuItem: true
+---
+
+## Dopravce
+
+Integrace s poskytovatelem dopravy se skládá ze dvou end-pointu a dvou webhooků.
+
+### Strana dopravce
+1. POST na `transport-provider/prices` pro zjištění seznamu nabízených doprav a jejich cen.
+    * Na EP je odeslána `pickup` a `delivery` adresa. Dopravce se na základě těchto bodů rozhodne, které (a zda nějaké) dopravy pro tuto trasu nabízí. 
+    * EP vrací seznam cen s jejich identifikátory, vybraný je poté odeslán při vytváření objednávky.
+    
+2. POST na `transport-provider/create-order` pro vytvoření objednávky na dopravu. 
+    * Odesílá se opět `pickup` a `delivery` adresa.
+    * Odesílá se identifikátor ceny z prvního kroku.
+
+3. POST webhook pro aktualizaci stavu dopravy ve chvíli, kdy je zásilka v rukou zákazníka PostCube (např. potvrzení o příjmu zásilky).
+
+### Strana PostCube
+1. POST webhook pro aktualizaci stavu dopravy ve chvíli, kdy je zásilka v rukou dopravce (např. doručujeme + ETA). 
+
+![Transport provider integration](/assets/images/transport-integration.png)

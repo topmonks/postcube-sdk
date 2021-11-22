@@ -1,12 +1,15 @@
 ---
-title: PostCube API Docs
+layout: default
+slug: api
+title: API Docs
+isMenuItem: true
 ---
 
 # API Docs
 
 baseUrl: `https://europe-west1-chytrybox.cloudfunctions.net`
 
-## OAuth
+## Auth
 
 `POST {baseUrl}/oauth-login`
 
@@ -24,6 +27,6 @@ baseUrl: `https://europe-west1-chytrybox.cloudfunctions.net`
 {
     "grant_type": "client_credentials",
     "expires_in": 0,
-    "access_token": "string"
+    "access_token": "..."
 }
 ```

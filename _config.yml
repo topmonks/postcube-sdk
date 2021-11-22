@@ -1,1 +1,32 @@
-theme: jekyll-theme-cayman
+
+title: Postcube Docs
+description: >-
+  Postcube public API documentation.
+author:
+  name: Chytrý box, s.r.o.
+  email: info@postcube.cz
+  website: https://postcube.cz
+
+baseurl: ""
+url: ""
+port: 4001
+
+
+sass:
+  sass_dir: _sass
+  style: compact # nested / expanded / compact / compressed
+# plugins:
+#   - 
+
+
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

@@ -1,24 +1,31 @@
 {
   "name": "@topmonks/postcube",
   "version": "1.1.7",
-  "description": "Shared PostCube constants",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot"
-  },
-  "keywords": [],
+  "description": "PostCube public SDK",
   "author": "TopMonks <info@topmonks.com>",
   "license": "EPL-2.0",
-  "dependencies": {
-    "javascript-state-machine": "^3.1.0",
-    "joi": "^17.4.0"
+  "keywords": [
+    "PostCube"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/topmonks/postcube-sdk.git"
   },
   "publishConfig": {
     "access": "public"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/topmonks/postcube-public.git"
+  "main": "index.js",
+  "scripts": {
+    "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "javascript-state-machine": "^3.1.0",
+    "joi": "^17.4.0"
+  },
+  "devDependencies": {
+    "@types/javascript-state-machine": "^2.4.3",
+    "typescript": "^4.5.2"
   }
 }

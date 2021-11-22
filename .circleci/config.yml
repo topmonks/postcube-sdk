@@ -1,0 +1,237 @@
+# version: 2.1
+# orbs:
+#   node: circleci/node@4.7.0
+#   slack: circleci/slack@4.4.3
+
+
+# executors:
+#   clojure:
+#     docker:
+#       - image: circleci/clojure:openjdk-8-tools-deps-node
+#   openjdk:
+#     docker:
+#       - image: cimg/openjdk:17.0.0-node
+
+# commands:
+#   wait-for-server:
+#     description: Wait for the server to start
+#     parameters:
+#       url:
+#         type: string
+#     steps:
+#       - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 << parameters.url >> -O /dev/null
+
+#   fastlane:
+#     description: Install, cache and run fastlane lane
+#     parameters:
+#       lane:
+#         type: string
+#         default: "hello"
+#     steps:
+#       - attach_workspace:
+#           at: ~/project
+#       - restore_cache:
+#           keys:
+#             - v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
+#       - run:
+#           working_directory: "ios/App"
+#           command: bundle install
+#       - run:
+#           working_directory: "ios/App"
+#           command: |
+#             echo "$FASTLANE_APP_STORE_API_KEY" > fastlane/ApuKey.json
+#             bundle exec fastlane << parameters.lane >>
+#       - save_cache:
+#           paths:
+#             - ~/.bundle
+#           key: v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
+
+
+# jobs:
+#   install_and_build_root_app:
+#     executor: clojure
+#     steps:
+#       - checkout
+#       - node/install-packages:
+#           pkg-manager: yarn
+#           cache-version: v4
+#           cache-path: ~/project/root-cache/node_modules
+#           app-dir: ~/project
+#       - run: node node_modules/esbuild/install.js
+#       - run: |
+#           echo 'export SNOWPACK_PUBLIC_CIRCLE_SHA1=$CIRCLE_SHA1' >> $BASH_ENV
+#           source $BASH_ENV
+#       - run: npm run build -- --ci
+#       - run: echo "$CHYTRYBOX_production_ADMINSDK" | base64 --decode > chytrybox-firebase-adminsdk.json
+#       - persist_to_workspace:
+#           root: .
+#           paths: [node_modules, build, chytrybox-firebase-adminsdk.json]
+
+#   install_and_test_functions:
+#     executor: openjdk
+#     environment:
+#       MOCHA_REPORTER: mocha-junit-reporter
+#       # DETACH_EMULATORS: 'true'
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: ~/project
+#       - node/install-packages:
+#           pkg-manager: yarn
+#           cache-version: v4
+#           cache-path: ~/project/functions-cache/node_modules
+#           app-dir: ~/project/functions
+#       - run: npx firebase functions:config:get --token "$FIREBASE_TOKEN" > functions/.runtimeconfig.json
+#       - run: npm test --prefix functions
+#       - persist_to_workspace:
+#           root: .
+#           paths: [functions]
+#       - store_test_results:
+#           path: ~/project/results
+
+#   test_root_app:
+#     executor: clojure
+#     environment:
+#       MOCHA_REPORTER: mocha-junit-reporter
+#       # DETACH_EMULATORS: 'true'
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: ~/project
+#       - run: npx firebase functions:config:get --token "$FIREBASE_TOKEN" > functions/.runtimeconfig.json
+#       - run: npm test
+#       - store_test_results:
+#           path: ~/project/results
+#       - store_artifacts:
+#           path: ~/project/results
+#       - store_artifacts:
+#           path: ~/project/coverage
+
+#   firebase_deploy:
+#     executor: clojure
+#     parameters:
+#       attrs:
+#         type: string
+#         default: ""
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: ~/project
+#       - run: npx firebase deploy << parameters.attrs >>
+
+#   ios_deploy:
+#     macos:
+#       xcode: "12.3.0"
+#     parameters:
+#       fastlane:
+#         type: string
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: ~/project
+#       - restore_cache:
+#           keys:
+#             - v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
+#       - run:
+#           working_directory: "ios/App"
+#           command: bundle install
+#       - run: npx cap sync
+#       - run:
+#           working_directory: "ios/App"
+#           command: |
+#             echo "$FASTLANE_APP_STORE_API_KEY" > fastlane/ApuKey.json
+#             bundle exec fastlane << parameters.fastlane >>
+#       - save_cache:
+#           paths:
+#             - ~/.bundle
+#           key: v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
+
+#   build_firmware:
+#     executor:
+#       name: node/default
+#       tag: "15.14.0"
+#     steps:
+#       - checkout
+#       - attach_workspace:
+#           at: ~/project
+#       - run: echo "TBD"
+
+# workflows:
+#   application:
+#     jobs:
+#       - install_and_build_root_app:
+#           filters:
+#             branches:
+#               only: master
+
+#       - install_and_test_functions:
+#           requires:
+#             - install_and_build_root_app
+
+#       - test_root_app:
+#           requires:
+#             - install_and_build_root_app
+
+#       - hold_firebase_full_release:
+#           type: approval
+#           requires:
+#             - install_and_build_root_app
+#             - install_and_test_functions
+
+#       - firebase_deploy:
+#           name: "Full release"
+#           requires:
+#             - hold_firebase_full_release
+
+
+#       - hold_firebase_backend_release:
+#           type: approval
+#           requires:
+#             - install_and_test_functions
+
+#       - firebase_deploy:
+#           name: "Release only backend"
+#           requires:
+#             - hold_firebase_backend_release
+#           attrs: "--only firestore,functions --force"
+
+
+#       - hold_firebase_client_release:
+#           type: approval
+#           requires:
+#             - install_and_build_root_app
+
+#       - firebase_deploy:
+#           name: "Release only client"
+#           requires:
+#             - hold_firebase_client_release
+#           attrs: "--only hosting"
+
+#       - hold_appstore:
+#           type: approval
+#           requires:
+#             - install_and_build_root_app
+
+#       - hold_testflight:
+#           type: approval
+#           requires:
+#             - install_and_build_root_app
+
+#       - ios_deploy:
+#           name: "Release AppStore"
+#           requires:
+#             - hold_appstore
+#           fastlane: deploy_appstore
+
+#       - ios_deploy:
+#           name: "Release TestFlight"
+#           requires:
+#             - hold_testflight
+#           fastlane: deploy_testflight
+
+#   firmware:
+#     jobs:
+#       - build_firmware:
+#           filters:
+#             branches:
+#               only: master
