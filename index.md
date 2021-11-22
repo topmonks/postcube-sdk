@@ -17,7 +17,7 @@ Zámek PostCube schránky je aplikací ovládán pomocí [Web Bluetooth API](htt
 
 Alternativně je možné zámek otevřít pomocí jednorázového kódu vygenerovaného na straně PostCube. Ten pak již jen stačí přeposlat pomocí BLE (Bluetooth Low Energy) na zařízení zámku.
 
-**Ukázka (demo) webové aplikace pro [otevření schránky zde](https://sdk.postcube.cz/examples/unlock-device/build/)**.
+**Ukázka (demo) webové aplikace pro [otevření schránky zde](https://docs.postcube.cz/examples/unlock-device/build/)**.
 
 ### SDK API
 

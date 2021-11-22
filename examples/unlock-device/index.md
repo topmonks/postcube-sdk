@@ -7,4 +7,4 @@ isMenuItem: true
 
 # Unlock device
 
-Live demo: [https://sdk.postcube.cz/examples/unlock-device/build](https://sdk.postcube.cz/examples/unlock-device/build)
+Live demo: [https://docs.postcube.cz/examples/unlock-device/build](https://docs.postcube.cz/examples/unlock-device/build)

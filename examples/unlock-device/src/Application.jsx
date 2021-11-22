@@ -93,7 +93,7 @@ function Application() {
 
   return (
     <>
-      <Header logoLink="https://sdk.postcube.cz/examples/unlock-device/build/" />
+      <Header logoLink="https://docs.postcube.cz/examples/unlock-device/build/" />
       <form className="application" onSubmit={handleSubmit}>
         <h1>Unlock Device</h1>
         <div className="mb8">

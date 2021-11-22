@@ -51,7 +51,7 @@ function Application() {
     });
   }, [formValues]);
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Header, {
-    logoLink: "https://sdk.postcube.cz/examples/unlock-device/build/"
+    logoLink: "https://docs.postcube.cz/examples/unlock-device/build/"
   }), /* @__PURE__ */ React.createElement("form", {
     className: "application",
     onSubmit: handleSubmit
