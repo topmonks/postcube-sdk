@@ -1,12 +1,13 @@
 
-import * as StateMachine from 'javascript-state-machine'
+import * as JavascriptStateMachine from 'javascript-state-machine'
+
 import {
     STATE_NAMES,
     TRANSITION_NAME,
 } from './constants/delivery'
 
-export const PostCubeStateMachine = (init) => {
-    return new StateMachine({
+export const StateMachine = (init) => {
+    return new JavascriptStateMachine({
         init,
         transitions: [{
             name: TRANSITION_NAME.UPDATE_FORM,
