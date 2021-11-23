@@ -11,40 +11,12 @@ import {
     BOX_RESPONSE_MESSAGES,
     BOX_RES_OK,
 } from './constants/bluetooth'
-
-export const splitCommand = (buffer: Uint8Array, chunkSize: number = 20): Uint8Array[] => {
-    const chunks: Uint8Array[] = []
-
-    let offset = 0
-    while (offset < buffer.length) {
-        chunks.push(buffer.subarray(offset, offset + chunkSize))
-        offset += chunkSize
-    }
-
-    return chunks
-}
-
-export const writeToCharacteristic = async(characteristic: BluetoothRemoteGATTCharacteristic, buffer: number[]|Uint8Array) => {
-    const chunks = splitCommand(
-        buffer instanceof Uint8Array ?
-            buffer :
-            new Uint8Array(buffer),
-        20,
-    )
-
-    for (const index in chunks) {
-        const chunk = chunks[index]
-        await characteristic.writeValue(chunk)
-    }
-}
-
-export const parseResult = (response: DataView, charUUID: string): number => {
-    return response.getUint8(BOX_CHAR_RESULTS_INDEX[charUUID])
-}
-
-export const parseResponseMessage = (code: number) => {
-    return BOX_RESPONSE_MESSAGES[code] || code
-}
+import {
+    splitCommand,
+    writeToCharacteristic,
+    parseResult,
+    parseResponseMessage,
+} from './helpers'
 
 export interface ScanBoxesResult {
     promise: Promise<void>
@@ -203,16 +175,3 @@ export const BoxesAPI: BoxesAPI = {
     connect,
     disconnect,
 }
-
-
-
-
-// async() => {
-//     const device = await navigator.bluetooth.requestDevice({})
-//     const pser = await device.gatt.getPrimaryService('')
-//     const char = await pser.getCharacteristic('')
-//     char.addEventListener('characteristicvaluechanged', (event) => {
-//         const chara: BluetoothRemoteGATTCharacteristic// = event.target
-//         chara.value
-//     })
-// }

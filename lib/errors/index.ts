@@ -1,6 +1,8 @@
 
 import { BoxError } from './boxError'
 
+export { BoxError }
+
 export const boxErrors = {
     bluetoothUnavailable: () =>
         new BoxError('bluetooth_unavailable', 'Bluetooth is unavailable'),

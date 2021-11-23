@@ -1,13 +1,22 @@
 
+export { StateMachine } from './stateMachine'
+export { BoxError } from './errors'
 export {
-    StateMachine,
-} from './stateMachine'
-export {
-    BoxesAPI,
-} from './boxesApi'
-export {
-    useBoxesAPI,
-} from './react'
+    splitCommand,
+    writeToCharacteristic,
+    parseResult,
+    parseResponseMessage,
+} from './helpers'
+
+
+// Boxes API
+
+export { BoxesAPI, ScanBoxesResult } from './boxesApi'
+
+
+// React API
+
+export { useBoxesAPI } from './react'
 
 
 // Constants
