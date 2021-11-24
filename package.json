@@ -21,9 +21,13 @@
     "watch": "tsc --watch"
   },
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "^1.6.0",
+    "@capacitor/core": "^3.3.2",
+    "cordova-plugin-ble-central": "^1.4.0",
     "javascript-state-machine": "^3.1.0",
     "joi": "^17.4.0",
-    "jsignal": "^2.5.0"
+    "jsignal": "^2.5.0",
+    "uninstall": "0.0.0"
   },
   "devDependencies": {
     "@types/react": "^17.0.36",

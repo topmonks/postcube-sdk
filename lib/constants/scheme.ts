@@ -1,5 +1,8 @@
 
-import * as joi from 'joi'
+import * as Joi from 'joi'
+const joi = (Joi as any)?.default ?
+    (Joi as any).default : Joi
+
 import {
     TRANSITION_NAME,
 } from './delivery'
@@ -13,29 +16,29 @@ export const RecipientValidationSchema = joi.object({
 }).unknown(true)
 
 export const DeliveryPointSchema = joi.object({
-    id: joi.string(),
-    type: joi.string().allow(""),
-    address: joi.string(),
+    id:                  joi.string(),
+    type:                joi.string().allow(''),
+    address:             joi.string(),
     addressStreetNumber: joi.string(),
-    addressStreet: joi.string(),
-    addressCity: joi.string(),
-    addressRegion: joi.string(),
-    addressPSC: joi.string(),
-    addressCountry: joi.string(),
-    phoneNumber: joi.string().allow(""),
-    placeId: joi.string(),
-    description: joi.string().allow(""),
-    ownerId: joi.string(),
-    name: joi.string(),
+    addressStreet:       joi.string(),
+    addressCity:         joi.string(),
+    addressRegion:       joi.string(),
+    addressPSC:          joi.string(),
+    addressCountry:      joi.string(),
+    phoneNumber:         joi.string().allow(''),
+    placeId:             joi.string(),
+    description:         joi.string().allow(''),
+    ownerId:             joi.string(),
+    name:                joi.string(),
 }).unknown(true)
 
 export const CreateSchema = joi.object({
     meta: SenderValidationSchema,
     create: joi.object({
-        sender: DeliveryPointSchema.required(),
-        recipient: DeliveryPointSchema.required(),
-        note: joi.string().allow(""),
-        code: joi.string().required(),
+        sender:            DeliveryPointSchema.required(),
+        recipient:         DeliveryPointSchema.required(),
+        note:              joi.string().allow(''),
+        code:              joi.string().required(),
         transportProvider: joi.any(),
     }),
 })
@@ -44,13 +47,13 @@ export const TransitionValidationSchema = {
     [TRANSITION_NAME.UPDATE_FORM]: joi.object({
         meta: SenderValidationSchema,
         update: joi.object({
-            sender: DeliveryPointSchema,
-            recipient: DeliveryPointSchema,
-            note: joi.string().allow(""),
-            code: joi.string(),
+            sender:            DeliveryPointSchema,
+            recipient:         DeliveryPointSchema,
+            note:              joi.string().allow(''),
+            code:              joi.string(),
             transportProvider: joi.any(),
-            paymentMethod: joi.any(),
-            newCard: joi.any(),
+            paymentMethod:     joi.any(),
+            newCard:           joi.any(),
         }),
     }),
     [TRANSITION_NAME.PACKAGE_TAGGED]: joi.object({

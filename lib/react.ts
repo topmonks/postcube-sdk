@@ -1,20 +1,42 @@
 
 import { useState, useEffect } from 'react'
 
-import { BoxesAPI } from './boxesApi'
+import { Cubes, Cube } from './cubes'
 
-export const useBoxesAPI = (): BoxesAPI => {
+export const useCubes = (): Cubes => {
     const [ toggle, setToggle ] = useState<boolean>(false)
 
-    const handleBoxAPIChange = () => {
+    const handleCubesChange = () => {
         setToggle(!toggle)
     }
 
     useEffect(() => {
-        BoxesAPI.onChange.listen(handleBoxAPIChange)
+        Cubes.onChange.listen(handleCubesChange)
         return () =>
-            BoxesAPI.onChange.unlisten(handleBoxAPIChange)
+            Cubes.onChange.unlisten(handleCubesChange)
     }, [])
 
-    return BoxesAPI
+    return Cubes
+}
+
+export const useCube = (cube?: Cube): Cube => {
+    const [ _cube, setCube ] = useState(cube)
+
+    const handleCubeChange = () => {
+        setCube(cube)
+    }
+
+    useEffect(() => {
+        setCube(cube)
+
+        if (!cube) {
+            return
+        }
+
+        cube.onChange.listen(handleCubeChange)
+        return () =>
+            cube.onChange.unlisten(handleCubeChange)
+    }, [cube])
+
+    return _cube
 }

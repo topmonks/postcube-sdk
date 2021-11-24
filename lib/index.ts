@@ -11,12 +11,13 @@ export {
 
 // Boxes API
 
-export { BoxesAPI, ScanBoxesResult } from './boxesApi'
+export { Cubes } from './cubes'
+export type { Cube, CubeServices } from './cubes'
 
 
 // React API
 
-export { useBoxesAPI } from './react'
+export { useCubes, useCube } from './react'
 
 
 // Constants
@@ -50,7 +51,7 @@ export {
 } from './constants/box'
 export {
     SERVICE_UUID_16,
-    SERVICE_UUID_16_CORDOVA,
+    // SERVICE_UUID_16_CORDOVA,
     SERVICE_UUID,
     CHAR_SAVE_ACC_UUID,
     CHAR_SET_KEY_UUID,
