@@ -1,13 +1,21 @@
 
-import { BoxError } from './boxError'
+import { CubeError } from './cubeError'
 
-export { BoxError }
+export { CubeError }
 
-export const boxErrors = {
+export const cubeErrors = {
+    notSupported: (message: string) =>
+        new CubeError('not_supported', message),
+    invalidPlatform: (message: string = 'Invalid platform') =>
+        new CubeError('invalid_platform', message),
     bluetoothUnavailable: () =>
-        new BoxError('bluetooth_unavailable', 'Bluetooth is unavailable'),
+        new CubeError('bluetooth_unavailable', 'Bluetooth is unavailable'),
     bluetoothDisabled: () =>
-        new BoxError('bluetooth_disabled', 'Bluetooth is currently disabled'),
+        new CubeError('bluetooth_disabled', 'Bluetooth is currently disabled'),
     noBoxConnected: () =>
-        new BoxError('no_box_connected', 'No box is currently connected'),
+        new CubeError('no_box_connected', 'No box is currently connected'),
+    invalidName: (message: string = 'Invalid PostCube device name') =>
+        new CubeError('invalid_device_name', message),
+    unknownBLECharacteristic: (message: string = 'Unknown bluetooth characteristic') =>
+        new CubeError('unknown_ble_characteristic', message),
 }

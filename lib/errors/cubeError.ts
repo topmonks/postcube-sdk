@@ -1,5 +1,5 @@
 
-export class BoxError extends Error {
+export class CubeError extends Error {
     name: string
 
     constructor(name: string, message: string, ) {

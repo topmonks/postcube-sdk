@@ -3,7 +3,14 @@
         "module": "commonjs",
         "target": "es2015",
         "declaration": true,
-        "outDir": "./build"
+        "outDir": "./build",
+        "strict": false,
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "es2015.promise",
+            "esnext"
+        ]
     },
     "include": [
         "lib/**/*"

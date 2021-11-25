@@ -1,6 +1,6 @@
 
 export { StateMachine } from './stateMachine'
-export { BoxError } from './errors'
+export { CubeError } from './errors'
 export {
     splitCommand,
     writeToCharacteristic,
@@ -11,8 +11,13 @@ export {
 
 // Boxes API
 
-export { Cubes } from './cubes'
-export type { Cube, CubeServices } from './cubes'
+export { Cubes, Platform } from './cubes'
+export type {
+    Cube,
+    CubeServices,
+    ScanOptions,
+    ScanResult,
+} from './cubes'
 
 
 // React API
@@ -50,9 +55,11 @@ export {
     BLOCKING_DELIVERY_SENDER_STATES,
 } from './constants/box'
 export {
+    SERVICE_BATTERY_UUID,
     SERVICE_UUID_16,
-    // SERVICE_UUID_16_CORDOVA,
+    SERVICE_UUID_16_CORDOVA,
     SERVICE_UUID,
+    CHAR_BATTERY_LEVEL_UUID,
     CHAR_SAVE_ACC_UUID,
     CHAR_SET_KEY_UUID,
     CHAR_UNLOCK_UUID,

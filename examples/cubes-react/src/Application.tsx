@@ -8,9 +8,20 @@ export const Application = ({}) => {
     const [ selectedCube, setSelectedCube ] = React.useState<Cube>()
     const cube = useCube(selectedCube)
 
+    const [ batteryLevel, setBatteryLevel ] = React.useState<number>()
+
     const handleSelectCube = async() => {
-        const cube = await Cubes.requestCube(namePrefix)
-        setSelectedCube(cube)
+        try {
+            const cube = await Cubes.requestCube(namePrefix)
+            setSelectedCube(cube)
+        } catch (err) {
+            console.error(err)
+        }
+    }
+
+    const handleReadBattery = async() => {
+        const currentBatteryLevel = await cube.getBattery()
+        setBatteryLevel(currentBatteryLevel)
     }
 
     return (
@@ -30,6 +41,13 @@ export const Application = ({}) => {
                     <pre>
                         {JSON.stringify(cube, null, 2)}
                     </pre>
+                    <div>
+                        <button
+                            onClick={handleReadBattery}
+                        >
+                            Read battery ({batteryLevel}%)
+                        </button>
+                    </div>
                 </React.Fragment>
             )}
         </div>

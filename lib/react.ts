@@ -20,10 +20,11 @@ export const useCubes = (): Cubes => {
 }
 
 export const useCube = (cube?: Cube): Cube => {
+    const [ toggle, setToggle ] = useState<boolean>(false)
     const [ _cube, setCube ] = useState(cube)
 
     const handleCubeChange = () => {
-        setCube(cube)
+        setToggle(!toggle)
     }
 
     useEffect(() => {

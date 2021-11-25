@@ -1,110 +1,143 @@
 
 import { jSignal } from 'jsignal'
-import { BleClient } from '@capacitor-community/bluetooth-le'
 
-import { boxErrors } from '../errors'
-import { Cube } from './cube'
-import { CubeCapacitor } from './cube.capacitor'
+import { cubeErrors } from '../errors'
+import { SERVICE_UUID } from '../constants/bluetooth'
+import {
+    Cube,
+    ScanOptions,
+    ScanResult,
+} from './cube'
+import {
+    isEnabledWeb,
+    requestCubeWeb,
+    scanForCubesWeb,
+} from './cube.web'
+import {
+    isEnabledCapacitor,
+    requestCubeCapacitor,
+    scanForCubesCapacitor,
+} from './cube.capacitor'
+import {
+    isEnabledNode,
+    requestCubeNode,
+    scanForCubesNode,
+} from './cube.node'
 
-// export interface ScanOptions {
-//     timeout?: number
-// }
-
-// export interface ScanResult {
-//     promise: Promise<void>
-//     cancel(): void
-// }
+export enum Platform {
+    web       = 'web',
+    capacitor = 'capacitor',
+    node      = 'node',
+}
 
 export interface Cubes {
     readonly onChange: jSignal<Cubes>
+    readonly onCubeDiscovered: jSignal<Cube>
     readonly isScanning: boolean
-    readonly foundCubes: Cube[]
+    readonly discoveredCubes: Cube[]
 
-    isAvailable(): Promise<boolean>
+    platform: Platform
+
     isEnabled(): Promise<boolean>
-    // scanForCubes(options?: ScanOptions): Promise<ScanResult>
-    requestCube(namePrefix: string): Promise<Cube>
+    requestCube(namePrefix: string, services?: string[]): Promise<Cube>
+    scanForCubes(options?: ScanOptions): Promise<ScanResult>
 }
 
+let platform: Platform = Platform.web
 let isScanning: boolean = false
-let foundCubes: Cube[] = []
+let discoveredCubes: Cube[] = []
 
-const isAvailable = async(): Promise<boolean> => {
-    return await BleClient.isEnabled() // TODO: if web check !!navigator.bluetooth
+const forgetDiscoveredCubes = () => {
+    discoveredCubes = []
+
+    Cubes.onChange.dispatch(Cubes)
+}
+
+const addDiscoveredCube = (cube: Cube) => {
+    Cubes.onCubeDiscovered.dispatch(cube)
+
+    discoveredCubes = [ cube, ...discoveredCubes]
+        .filter(item => item.deviceId !== cube.deviceId)
+
+    Cubes.onChange.dispatch(Cubes)
 }
 
 const isEnabled = async(): Promise<boolean> => {
-    // if (await isAvailable()) {
-    //     return navigator.bluetooth.getAvailability()
-    // }
-
-    // return false
-    return true
-}
-
-const ensureEnabled = async() => {
-    if (!await isAvailable()) {
-        throw boxErrors.bluetoothUnavailable()
+    switch (Cubes.platform) {
+    case Platform.web:
+        return isEnabledWeb()
+    case Platform.capacitor:
+        return isEnabledCapacitor()
+    case Platform.node:
+        return isEnabledNode()
     }
 
-    // if (!await isEnabled()) {
-    //     throw boxErrors.bluetoothDisabled()
-    // }
+    throw cubeErrors.invalidPlatform()
 }
 
-// const scanForCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
-//     await ensureEnabled()
+const requestCube = async(namePrefix: string, services: string[] = [SERVICE_UUID]): Promise<Cube> => {
+    forgetDiscoveredCubes()
 
-//     let scanTimeout: number
-//     let stopScan = false
+    let cube: Cube
+    switch (Cubes.platform) {
+    case Platform.web:
+        cube = await requestCubeWeb(namePrefix, services)
+        break
+    case Platform.capacitor:
+        cube = await requestCubeCapacitor(namePrefix, services)
+        break
+    case Platform.node:
+        cube = await requestCubeNode(namePrefix, services)
+        break
+    default:
+        throw cubeErrors.invalidPlatform()
+    }
 
-//     const cancel = () => {
-//         if (scanTimeout) {
-//             clearTimeout(scanTimeout)
-//         }
-
-//         scanTimeout = null
-//         stopScan = true
-//     }
-
-//     const runScan = async(): Promise<void> => {
-//         if (options?.timeout && options.timeout > 0) {
-//             scanTimeout = setTimeout(cancel, options.timeout)
-//         }
-
-//         while (!stopScan) {
-//             console.log('Scanning for cubes...')
-
-//             await new Promise(resolve => setTimeout(resolve, 1000))
-//         }
-//     }
-
-//     return {
-//         promise: runScan(),
-//         cancel,
-//     }
-// }
-
-const requestCube = async(namePrefix: string): Promise<Cube> => {
-    await BleClient.initialize()
-
-    const device = await BleClient.requestDevice({
-        namePrefix,
-    })
-
-    const cube = CubeCapacitor(device)
+    addDiscoveredCube(cube)
 
     return cube
 }
 
+const scanForCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
+    forgetDiscoveredCubes()
+
+    const _options: ScanOptions = {
+        ...options,
+        onDiscovery: cube => {
+            addDiscoveredCube(cube)
+
+            if (typeof options?.onDiscovery === 'function') {
+                options.onDiscovery(cube)
+            }
+        },
+    }
+
+    switch (Cubes.platform) {
+    case Platform.web:
+        return scanForCubesWeb(_options)
+    case Platform.capacitor:
+        return scanForCubesCapacitor(_options)
+    case Platform.node:
+        return scanForCubesNode(_options)
+    }
+
+    throw cubeErrors.invalidPlatform()
+}
+
 export const Cubes: Cubes = {
-    onChange: new jSignal(),
-    get isScanning(): boolean {
-        return isScanning
+    onChange: new jSignal<Cubes>(),
+    onCubeDiscovered: new jSignal<Cube>(),
+    get isScanning(): boolean { return isScanning },
+    get platform(): Platform { return platform },
+    set platform(value: Platform) {
+        if (!~Object.keys(Platform).indexOf(value)) {
+            throw cubeErrors.invalidPlatform(`Invalid platform '${value}'`)
+        }
+
+        platform = value
     },
-    isAvailable,
     isEnabled,
-    foundCubes,
-    // scanForCubes,
+    discoveredCubes,
     requestCube,
+    scanForCubes,
 }

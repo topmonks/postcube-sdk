@@ -1,22 +1,26 @@
 
+// standard
+export const SERVICE_BATTERY_UUID    = '0000180F-0000-1000-8000-00805F9B34FB'
+export const CHAR_BATTERY_LEVEL_UUID = '00002A19-0000-1000-8000-00805F9B34FB'
+
 // v1.0
-// export const SERVICE_UUID_16         = 0x7900
-// export const SERVICE_UUID_16_CORDOVA = '00007900-0000-1000-8000-00805F9B34FB'
-// export const SERVICE_UUID            = '13667900-ede0-45de-87e8-77a6c2b8c0b6'
+export const SERVICE_UUID_16         = 0x7900
+export const SERVICE_UUID_16_CORDOVA = '00007900-0000-1000-8000-00805F9B34FB'
+export const SERVICE_UUID            = '13667900-ede0-45de-87e8-77a6c2b8c0b6'
 export const CHAR_SAVE_ACC_UUID      = '13667901-ede0-45de-87e8-77a6c2b8c0b6'
 export const CHAR_SET_KEY_UUID       = '13667902-ede0-45de-87e8-77a6c2b8c0b6'
 export const CHAR_UNLOCK_UUID        = '13667903-ede0-45de-87e8-77a6c2b8c0b6'
-// export const CHAR_RESULT_UUID        = '13667904-ede0-45de-87e8-77a6c2b8c0b6'
-// export const CHAR_STATUS_UUID        = '13667905-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_RESULT_UUID        = '13667904-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_STATUS_UUID        = '13667905-ede0-45de-87e8-77a6c2b8c0b6'
 export const CHAR_TIME_SYNC_UUID     = '13667906-ede0-45de-87e8-77a6c2b8c0b6'
 
 // v2.0
-export const SERVICE_UUID_16   = 0x8000
-export const SERVICE_UUID      = '13668000-ede0-45de-87e8-77a6c2b8c0b6'
-export const CHAR_CONTROL_UUID = '13668001-ede0-45de-87e8-77a6c2b8c0b6'
-export const CHAR_RESULT_UUID  = '13668002-ede0-45de-87e8-77a6c2b8c0b6'
-export const CHAR_STATUS_UUID  = '13668003-ede0-45de-87e8-77a6c2b8c0b6'
-export const CHAR_VERSION_UUID = '13668004-ede0-45de-87e8-77a6c2b8c0b6'
+// export const SERVICE_UUID_16   = 0x8000
+// export const SERVICE_UUID      = '13668000-ede0-45de-87e8-77a6c2b8c0b6'
+// export const CHAR_CONTROL_UUID = '13668001-ede0-45de-87e8-77a6c2b8c0b6'
+// export const CHAR_RESULT_UUID  = '13668002-ede0-45de-87e8-77a6c2b8c0b6'
+// export const CHAR_STATUS_UUID  = '13668003-ede0-45de-87e8-77a6c2b8c0b6'
+// export const CHAR_VERSION_UUID = '13668004-ede0-45de-87e8-77a6c2b8c0b6'
 
 
 export const BOX_CID_RESERVED  = 0
