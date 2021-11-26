@@ -29,6 +29,8 @@
     "joi": "^17.4.0",
     "jsignal": "^2.5.0",
     "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "pbjs": "0.0.14",
     "uninstall": "0.0.0"
   },
   "devDependencies": {
