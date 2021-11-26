@@ -1,17 +1,15 @@
 
 import { jSignal } from 'jsignal'
 
-export interface CubeServices {
-    transaction<T>(exec: () => T): Promise<T>
-
+export interface CubeCommands {
     getBattery(): Promise<number>
-    syncTime(): Promise<void>
-    unlock(): Promise<void>
-    setKey(): Promise<void>
+    syncTime(timestamp: number): Promise<void>
+    unlock(lockId: number): Promise<void>
+    setKey(keyIndex: number, publicKey: Buffer, expireAt: number): Promise<void>
     factoryReset(): Promise<void>
 }
 
-export interface Cube extends CubeServices {
+export interface Cube extends CubeCommands {
     readonly onChange: jSignal<Cube>
     readonly id: string
     readonly name: string

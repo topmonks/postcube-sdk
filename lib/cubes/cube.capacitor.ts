@@ -14,7 +14,7 @@ import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
-import { cubeServices } from './services'
+import { cubeCommands } from './commands'
 
 export const isEnabledCapacitor = async(): Promise<boolean> => {
     return await BleClient.isEnabled()
@@ -115,7 +115,7 @@ export const CubeCapacitor = (device: BleDevice): Cube => {
     }
 
     return (cube = {
-        ...cubeServices(() => cube),
+        ...cubeCommands(() => cube),
         get id(): string {
             return id
         },

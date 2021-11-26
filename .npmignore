@@ -1,6 +1,8 @@
 
 .circleci
 
+tmp
+
 _includes
 _layouts
 _sass

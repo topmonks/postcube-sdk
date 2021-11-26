@@ -11,7 +11,7 @@ import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
-import { cubeServices } from './services'
+import { cubeCommands } from './commands'
 
 export const isEnabledNode = async(): Promise<boolean> => {
     return true
@@ -127,7 +127,7 @@ export const CubeNode = (peripheral: noble.Peripheral): Cube => {
     }
 
     return (cube = {
-        ...cubeServices(() => cube),
+        ...cubeCommands(() => cube),
         get id(): string {
             return id
         },

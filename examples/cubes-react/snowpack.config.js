@@ -9,13 +9,14 @@ module.exports = {
   },
   plugins: [
     "@snowpack/plugin-typescript",
+    '@snowpack/plugin-postcss',
     "@snowpack/plugin-react-refresh",
   ],
   packageOptions: {
     /* ... */
   },
   devOptions: {
-    /* ... */
+    port: 8082,
   },
   buildOptions: {
     baseUrl: "/examples/cubes-react",

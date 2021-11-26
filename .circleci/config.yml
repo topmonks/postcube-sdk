@@ -1,7 +1,10 @@
 # version: 2.1
 # orbs:
 #   node: circleci/node@4.7.0
-#   slack: circleci/slack@4.4.3
+
+
+
+
 
 
 # executors:
@@ -20,31 +23,6 @@
 #         type: string
 #     steps:
 #       - run: wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 -t 10 << parameters.url >> -O /dev/null
-
-#   fastlane:
-#     description: Install, cache and run fastlane lane
-#     parameters:
-#       lane:
-#         type: string
-#         default: "hello"
-#     steps:
-#       - attach_workspace:
-#           at: ~/project
-#       - restore_cache:
-#           keys:
-#             - v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
-#       - run:
-#           working_directory: "ios/App"
-#           command: bundle install
-#       - run:
-#           working_directory: "ios/App"
-#           command: |
-#             echo "$FASTLANE_APP_STORE_API_KEY" > fastlane/ApuKey.json
-#             bundle exec fastlane << parameters.lane >>
-#       - save_cache:
-#           paths:
-#             - ~/.bundle
-#           key: v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
 
 
 # jobs:
@@ -118,33 +96,6 @@
 #       - attach_workspace:
 #           at: ~/project
 #       - run: npx firebase deploy << parameters.attrs >>
-
-#   ios_deploy:
-#     macos:
-#       xcode: "12.3.0"
-#     parameters:
-#       fastlane:
-#         type: string
-#     steps:
-#       - checkout
-#       - attach_workspace:
-#           at: ~/project
-#       - restore_cache:
-#           keys:
-#             - v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
-#       - run:
-#           working_directory: "ios/App"
-#           command: bundle install
-#       - run: npx cap sync
-#       - run:
-#           working_directory: "ios/App"
-#           command: |
-#             echo "$FASTLANE_APP_STORE_API_KEY" > fastlane/ApuKey.json
-#             bundle exec fastlane << parameters.fastlane >>
-#       - save_cache:
-#           paths:
-#             - ~/.bundle
-#           key: v1-gem-cache-ios-{{ checksum "ios/App/Gemfile.lock" }}
 
 #   build_firmware:
 #     executor:

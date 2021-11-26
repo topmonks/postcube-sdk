@@ -1,5 +1,6 @@
 
 import { jSignal } from 'jsignal'
+import { unionBy } from 'lodash'
 
 import { cubeErrors } from '../errors'
 import { SERVICE_UUID } from '../constants/bluetooth'
@@ -18,23 +19,15 @@ import {
     requestCubeCapacitor,
     scanForCubesCapacitor,
 } from './cube.capacitor'
-import {
-    isEnabledNode,
-    requestCubeNode,
-    scanForCubesNode,
-} from './cube.node'
 
 export enum Platform {
     web       = 'web',
     capacitor = 'capacitor',
-    node      = 'node',
 }
 
 export interface Cubes {
     readonly onChange: jSignal<Cubes>
     readonly onCubeDiscovered: jSignal<Cube>
-    readonly isScanning: boolean
-    readonly discoveredCubes: Cube[]
 
     platform: Platform
 
@@ -43,41 +36,18 @@ export interface Cubes {
     scanForCubes(options?: ScanOptions): Promise<ScanResult>
 }
 
-let platform: Platform = Platform.web
-let isScanning: boolean = false
-let discoveredCubes: Cube[] = []
-
-const forgetDiscoveredCubes = () => {
-    discoveredCubes = []
-
-    Cubes.onChange.dispatch(Cubes)
-}
-
-const addDiscoveredCube = (cube: Cube) => {
-    Cubes.onCubeDiscovered.dispatch(cube)
-
-    discoveredCubes = [ cube, ...discoveredCubes]
-        .filter(item => item.deviceId !== cube.deviceId)
-
-    Cubes.onChange.dispatch(Cubes)
-}
-
 const isEnabled = async(): Promise<boolean> => {
     switch (Cubes.platform) {
     case Platform.web:
         return isEnabledWeb()
     case Platform.capacitor:
         return isEnabledCapacitor()
-    case Platform.node:
-        return isEnabledNode()
     }
 
     throw cubeErrors.invalidPlatform()
 }
 
 const requestCube = async(namePrefix: string, services: string[] = [SERVICE_UUID]): Promise<Cube> => {
-    forgetDiscoveredCubes()
-
     let cube: Cube
     switch (Cubes.platform) {
     case Platform.web:
@@ -86,25 +56,20 @@ const requestCube = async(namePrefix: string, services: string[] = [SERVICE_UUID
     case Platform.capacitor:
         cube = await requestCubeCapacitor(namePrefix, services)
         break
-    case Platform.node:
-        cube = await requestCubeNode(namePrefix, services)
-        break
     default:
         throw cubeErrors.invalidPlatform()
     }
-
-    addDiscoveredCube(cube)
 
     return cube
 }
 
 const scanForCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
-    forgetDiscoveredCubes()
+    Cubes.onChange.dispatch(Cubes)
 
     const _options: ScanOptions = {
         ...options,
         onDiscovery: cube => {
-            addDiscoveredCube(cube)
+            Cubes.onCubeDiscovered.dispatch(cube)
 
             if (typeof options?.onDiscovery === 'function') {
                 options.onDiscovery(cube)
@@ -117,17 +82,16 @@ const scanForCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
         return scanForCubesWeb(_options)
     case Platform.capacitor:
         return scanForCubesCapacitor(_options)
-    case Platform.node:
-        return scanForCubesNode(_options)
     }
 
     throw cubeErrors.invalidPlatform()
 }
 
+let platform: Platform = Platform.web
+
 export const Cubes: Cubes = {
     onChange: new jSignal<Cubes>(),
     onCubeDiscovered: new jSignal<Cube>(),
-    get isScanning(): boolean { return isScanning },
     get platform(): Platform { return platform },
     set platform(value: Platform) {
         if (!~Object.keys(Platform).indexOf(value)) {
@@ -137,7 +101,6 @@ export const Cubes: Cubes = {
         platform = value
     },
     isEnabled,
-    discoveredCubes,
     requestCube,
     scanForCubes,
 }

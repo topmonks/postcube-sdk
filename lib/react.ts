@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react'
 
 import { Cubes, Cube } from './cubes'
 
-export const useCubes = (): Cubes => {
+export const useCubes = (
+    onCubeDiscovery?: (cube: Cube) => any,
+): Cubes => {
     const [ toggle, setToggle ] = useState<boolean>(false)
 
     const handleCubesChange = () => {
@@ -15,6 +17,16 @@ export const useCubes = (): Cubes => {
         return () =>
             Cubes.onChange.unlisten(handleCubesChange)
     }, [])
+
+    useEffect(() => {
+        if (!onCubeDiscovery) {
+            return
+        }
+
+        Cubes.onCubeDiscovered.listen(onCubeDiscovery)
+        return () =>
+            Cubes.onCubeDiscovered.unlisten(onCubeDiscovery)
+    }, [onCubeDiscovery])
 
     return Cubes
 }

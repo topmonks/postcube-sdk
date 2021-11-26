@@ -3,6 +3,8 @@ _site
 .jekyll-cache
 .jekyll-metadata
 
+tmp
+
 vendor
 node_modules
 

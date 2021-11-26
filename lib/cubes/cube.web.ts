@@ -10,7 +10,7 @@ import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
-import { cubeServices } from './services'
+import { cubeCommands } from './commands'
 
 export const isEnabledWeb = async(): Promise<boolean> => {
     return (
@@ -33,7 +33,14 @@ export const requestCubeWeb = async(namePrefix: string, services: string[]): Pro
 }
 
 export const scanForCubesWeb = async(options: ScanOptions = {}): Promise<ScanResult> => {
-    throw cubeErrors.notSupported(`scanForCubes is not supported on platform 'WebBluetooth'`)
+    return {
+        async stopScan() {},
+        promise: requestCubeWeb(options.namePrefix, options.services).then(cube => {
+            if (typeof options?.onDiscovery === 'function') {
+                options.onDiscovery(cube)
+            }
+        }),
+    }
 }
 
 export const CubeWeb = (device: BluetoothDevice): Cube => {
@@ -80,7 +87,7 @@ export const CubeWeb = (device: BluetoothDevice): Cube => {
     }
 
     return (cube = {
-        ...cubeServices(() => cube),
+        ...cubeCommands(() => cube),
         get id(): string {
             return id
         },
