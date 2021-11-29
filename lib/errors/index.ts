@@ -1,7 +1,14 @@
 
 import { CubeError } from './cubeError'
+import { APIError } from './apiError'
 
 export { CubeError }
+export { APIError }
+
+export const apiErrors = {
+    invalidCredentials: (message: string = 'Invalid credentials') =>
+        new APIError('invalid_credentials', message),
+}
 
 export const cubeErrors = {
     notSupported: (message: string) =>

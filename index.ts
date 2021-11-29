@@ -1,6 +1,9 @@
 
 export { StateMachine } from './lib/stateMachine'
-export { CubeError } from './lib/errors'
+export {
+    CubeError,
+    APIError,
+} from './lib/errors'
 export {
     getFuture,
     getFutureEpoch,

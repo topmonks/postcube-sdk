@@ -2,7 +2,6 @@
 layout: default
 title: Bluetooth API
 slug: cubes
-isMenuItem: true
 ---
 
 ## Supported platforms

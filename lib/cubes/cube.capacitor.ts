@@ -40,7 +40,7 @@ export const requestCubeCapacitor = async(
 }
 
 export const scanForCubesCapacitor = async(options: ScanOptions = {}): Promise<ScanResult> => {
-    let shouldStopScan = false
+    const abortSignal = new jSignal()
     let scanTimeout
 
     const stopScan = async() => {
@@ -49,6 +49,7 @@ export const scanForCubesCapacitor = async(options: ScanOptions = {}): Promise<S
         }
 
         scanTimeout = null
+        abortSignal.dispatch()
 
         await BleClient.stopLEScan()
     }
@@ -65,19 +66,19 @@ export const scanForCubesCapacitor = async(options: ScanOptions = {}): Promise<S
         }
     }
 
-    const startScan = async() => {
-        if (options?.timeout && options.timeout > 0) {
-            scanTimeout = setTimeout(stopScan, options.timeout)
-        }
+    const startScan = async(): Promise<void> => {
+        return new Promise(async(resolve, reject) => {
+            abortSignal.listen(resolve)
 
-        await BleClient.requestLEScan({
-            namePrefix: options.namePrefix,
-            optionalServices: options.services,
-        }, handleDiscovery)
+            if (options?.timeout && options.timeout > 0) {
+                scanTimeout = setTimeout(stopScan, options.timeout)
+            }
 
-        while (!shouldStopScan) {
-            await new Promise(resolve => setTimeout(resolve, 100))
-        }
+            await BleClient.requestLEScan({
+                namePrefix: options.namePrefix,
+                optionalServices: options.services,
+            }, handleDiscovery)
+        })
     }
 
     return {
