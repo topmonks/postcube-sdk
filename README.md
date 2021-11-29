@@ -1,0 +1,1 @@
+**[Dokumentace ZDE](./index.md)**
