@@ -1,9 +1,31 @@
 
-import {
-    BOX_CHAR_RESULTS_INDEX,
-    BOX_RESPONSE_MESSAGES,
-} from './constants/bluetooth'
+import { chunk } from 'lodash'
+
+import { BOX_CHAR_RESULTS_INDEX } from './constants/bluetooth'
 import { cubeErrors } from './errors'
+
+export const getFuture = (hours: number) => {
+    const future = new Date()
+    future.setHours(future.getHours() + hours)
+    return future
+}
+
+export const getFutureEpoch = (
+    hours: number,
+    millisecondPrecision: boolean = false,
+) => getFuture(hours).getTime() / (1 + Number(!millisecondPrecision) * 999)
+
+export const parseSecretCode = (secretCode: string) => {
+    if (!/^[0-9a-fA-F]{8}$/.test(secretCode)) {
+        throw cubeErrors.invalidSecretCode()
+    }
+
+    return chunk(secretCode, 2).map(byte => parseInt(byte.join(''), 16))
+}
+
+export const parseResultValue = (value: DataView, characteristicUUID: string): number => {
+    return value.getInt8(BOX_CHAR_RESULTS_INDEX[characteristicUUID])
+}
 
 export const parseBoxName = (name: string): {
     prefix: string
@@ -36,38 +58,4 @@ export const parseBoxName = (name: string): {
             nameParts[1] : null,
         isMultibox,
     }
-}
-
-export const splitCommand = (buffer: Uint8Array, chunkSize: number = 20): Uint8Array[] => {
-    const chunks: Uint8Array[] = []
-
-    let offset = 0
-    while (offset < buffer.length) {
-        chunks.push(buffer.subarray(offset, offset + chunkSize))
-        offset += chunkSize
-    }
-
-    return chunks
-}
-
-export const writeToCharacteristic = async(characteristic: BluetoothRemoteGATTCharacteristic, buffer: number[]|Uint8Array) => {
-    const chunks = splitCommand(
-        buffer instanceof Uint8Array ?
-            buffer :
-            new Uint8Array(buffer),
-        20,
-    )
-
-    for (const index in chunks) {
-        const chunk = chunks[index]
-        await characteristic.writeValue(chunk)
-    }
-}
-
-export const parseResult = (response: DataView, charUUID: string): number => {
-    return response.getUint8(BOX_CHAR_RESULTS_INDEX[charUUID])
-}
-
-export const parseResponseMessage = (code: number) => {
-    return BOX_RESPONSE_MESSAGES[code] || code
 }

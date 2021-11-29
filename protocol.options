@@ -1,0 +1,2 @@
+postcube.EncryptedPacket.hashedSecret   max_size:32 fixed_length:true
+postcube.SetKey.publicKey               max_size:64 fixed_length:true

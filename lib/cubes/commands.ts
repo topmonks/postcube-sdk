@@ -1,7 +1,4 @@
 
-import * as pbjs from 'pbjs'
-import * as moment from 'moment'
-
 import {
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
@@ -11,83 +8,130 @@ import {
     CHAR_TIME_SYNC_UUID,
     CHAR_RESULT_UUID,
 } from '../constants/bluetooth'
+import {
+    getFutureEpoch,
+    parseResultValue,
+} from '../helpers'
+import {
+    encodeCommand,
+    EncodingEncryptionKeys,
+} from '../encoding'
 import { Cube, CubeCommands } from './cube'
-import * as protocol from './protocol.pb'
-
-type Command = protocol.SetKey|protocol.Unlock|protocol.TimeSync|protocol.Nuke|protocol.Protect
+import { cubeErrors } from '../errors'
 
 export const cubeCommands = (cube: () => Cube): CubeCommands => {
-    const sendPacketAndReadResult = async(characteristicUUID: string, buffer: Uint8Array) => {
-        await cube().write(SERVICE_UUID, characteristicUUID, new DataView(buffer))
+    let encryptionKeys: EncodingEncryptionKeys = null
 
-        // TODO: listen for result char's value change
+    const setEncryptionKeys = (keys?: EncodingEncryptionKeys) => {
+        if (!keys) {
+            encryptionKeys = null
+            return
+        }
+
+        encryptionKeys = keys
     }
 
-    // const composeEncryptedPacket = (encryption: 'secret'|'key', payload: Buffer) => {
-    // }
+    const sendCommand = async(characteristicUUID: string, value: DataView) => {
+        await cube().write(SERVICE_UUID, characteristicUUID, value)
+    }
 
-    // const composePacket = (commandId: number, expireAt: number, command: Command) => {
-    //     protocol.encodePacket({
-    //         commandId,
-    //         expireAt,
-    //     })
-    // }
+    const sendCommandAndReadResult = (characteristicUUID: string, value: DataView): Promise<number> =>
+        new Promise(async(resolve, reject) => {
+            try {
+                const stopNotifications = await cube().listenForNotifications(SERVICE_UUID, CHAR_RESULT_UUID, value => {
+                    stopNotifications()
 
-    const syncTime = async(timestamp: number) => {
-        await cube().connect()
+                    const result = parseResultValue(value, characteristicUUID)
+                    return resolve(result)
+                })
 
-        const commandIdBuffer = crypto.getRandomValues(new Uint32Array(1))
-
-        const buffer = protocol.encodePacket({
-            commandId: commandIdBuffer.buffer[0],
-            expireAt: moment().add(1, 'day').unix(),
-            timeSync: { timestamp },
+                await sendCommand(characteristicUUID, value)
+            } catch (err) {
+                reject(err)
+            }
         })
 
-        await sendPacketAndReadResult(CHAR_TIME_SYNC_UUID, buffer)
+    const writeSyncTime = async(timestamp: number) => {
+        await cube().connect()
+
+        if (!encryptionKeys) {
+            throw cubeErrors.invalidKeys(`Missing keys for cube ${cube().id}`)
+        }
+
+        const command = await encodeCommand({
+            timeSync: {
+                timestamp,
+            },
+        }, { keys: encryptionKeys })
+
+        await sendCommand(CHAR_TIME_SYNC_UUID, command)
 
         cube().disconnect()
     }
 
-    const unlock = async(lockId: number) => {
+    const writeUnlock = async(lockId: number): Promise<number> => {
         await cube().connect()
 
-        const buffer = Buffer.from([])
-        await cube().write(SERVICE_UUID, CHAR_UNLOCK_UUID, new DataView(buffer))
+        const value = await encodeCommand({
+            unlock: { lockId },
+        })
+
+        const result = await sendCommandAndReadResult(CHAR_UNLOCK_UUID, value)
+
+        cube().disconnect()
+        return result
+    }
+
+    const writeUnlockWithCustomCommand = async(command: Uint8Array): Promise<number> => {
+        await cube().connect()
+
+        const result = await sendCommandAndReadResult(CHAR_UNLOCK_UUID, new DataView(command))
+
+        cube().disconnect()
+        return result
+    }
+
+    const writeSetKey = async(keyIndex: number, publicKey: Uint8Array, expireAt: number) => {
+        await cube().connect()
+
+        if (!encryptionKeys) {
+            throw cubeErrors.invalidKeys(`Missing keys for cube ${cube().id}`)
+        }
+
+        const value = await encodeCommand({
+            setKey: {
+                keyIndex,
+                expireAt,
+                publicKey,
+            },
+        }, { keys: encryptionKeys })
+
+        await cube().write(SERVICE_UUID, CHAR_SET_KEY_UUID, value)
 
         cube().disconnect()
     }
 
-    const setKey = async(keyIndex: number, publicKey: Buffer, expireAt: number) => {
-        await cube().connect()
-
-        const buffer = Buffer.from([])
-        await cube().write(SERVICE_UUID, CHAR_SET_KEY_UUID, new DataView(buffer))
-
-        cube().disconnect()
-    }
-
-    const factoryReset = async() => {
+    const writeFactoryReset = async() => {
         await cube().connect()
         cube().disconnect()
     }
 
-    const getBattery = async(): Promise<number> => {
+    const readBattery = async(): Promise<number> => {
         await cube().connect()
 
-        await cube().read(SERVICE_BATTERY_UUID, CHAR_BATTERY_LEVEL_UUID)
-
-        const value = await cube().read(SERVICE_UUID, CHAR_RESULT_UUID)
+        const value = await cube().read(SERVICE_BATTERY_UUID, CHAR_BATTERY_LEVEL_UUID)
 
         cube().disconnect()
         return value.getUint8(0)
     }
 
     return {
-        syncTime,
-        unlock,
-        setKey,
-        factoryReset,
-        getBattery,
+        setEncryptionKeys,
+        writeSyncTime,
+        writeUnlock,
+        writeUnlockWithCustomCommand,
+        writeSetKey,
+        writeFactoryReset,
+        readBattery,
     }
 }

@@ -1,13 +1,18 @@
 
-import { jSignal } from 'jsignal'
+import { jSignal, Listener } from 'jsignal'
 import * as noble from '@abandonware/noble'
 
+import {
+    SERVICE_BATTERY_UUID,
+    SERVICE_UUID,
+} from '../constants/bluetooth'
 import { cubeErrors } from '../errors'
 import { parseBoxName } from '../helpers'
 import {
     Cube,
     ScanOptions,
     ScanResult,
+    StopNotifications,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
@@ -17,7 +22,10 @@ export const isEnabledNode = async(): Promise<boolean> => {
     return true
 }
 
-export const requestCubeNode = async(namePrefix: string, services: string[]): Promise<Cube> => {
+export const requestCubeNode = async(
+    namePrefix: string,
+    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+): Promise<Cube> => {
     throw cubeErrors.notSupported(`requestCube is not supported on platform 'Node.js'`)
 }
 
@@ -126,6 +134,25 @@ export const CubeNode = (peripheral: noble.Peripheral): Cube => {
         await characteristic.writeAsync(buffer, true)
     }
 
+    const listenForNotifications = async(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+    ): Promise<StopNotifications> => {
+        const handleCharacteristicValueChanged = event => {
+            if (typeof listener === 'function') {
+                listener(event.target.value)
+            }
+        }
+
+        const characteristic = await getCharacteristic(serviceUUID, characteristicUUID)
+        // characteristic.addListener()
+
+        return () => {
+            // characteristic.removeListener()
+        }
+    }
+
     return (cube = {
         ...cubeCommands(() => cube),
         get id(): string {
@@ -149,5 +176,6 @@ export const CubeNode = (peripheral: noble.Peripheral): Cube => {
         getRSSI,
         read,
         write,
+        listenForNotifications,
     })
 }

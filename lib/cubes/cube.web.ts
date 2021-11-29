@@ -1,12 +1,17 @@
 
-import { jSignal } from 'jsignal'
+import { jSignal, Listener } from 'jsignal'
 
+import {
+    SERVICE_BATTERY_UUID,
+    SERVICE_UUID,
+} from '../constants/bluetooth'
 import { cubeErrors } from '../errors'
 import { parseBoxName } from '../helpers'
 import {
     Cube,
     ScanOptions,
     ScanResult,
+    StopNotifications,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
@@ -19,7 +24,10 @@ export const isEnabledWeb = async(): Promise<boolean> => {
     )
 }
 
-export const requestCubeWeb = async(namePrefix: string, services: string[]): Promise<Cube> => {
+export const requestCubeWeb = async(
+    namePrefix: string,
+    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+): Promise<Cube> => {
     const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: false,
         optionalServices: services,
@@ -86,6 +94,24 @@ export const CubeWeb = (device: BluetoothDevice): Cube => {
         await characteristic.writeValue(value)
     }
 
+    const listenForNotifications = async(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+    ): Promise<StopNotifications> => {
+        const handleCharacteristicValueChanged = event => {
+            if (typeof listener === 'function') {
+                listener(event.target.value)
+            }
+        }
+
+        const characteristic = await getCharacteristic(serviceUUID, characteristicUUID)
+
+        characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
+        return () =>
+            characteristic.removeEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
+    }
+
     return (cube = {
         ...cubeCommands(() => cube),
         get id(): string {
@@ -109,5 +135,6 @@ export const CubeWeb = (device: BluetoothDevice): Cube => {
         getRSSI,
         read,
         write,
+        listenForNotifications,
     })
 }

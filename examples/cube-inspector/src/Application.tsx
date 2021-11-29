@@ -72,7 +72,7 @@ export const Application = ({}) => {
 
     return (
         <div className='bg-gray-200 min-h-screen'>
-            <div className='text-4xl mx-48 pt-6'>Scan Cubes - React</div>
+            <div className='text-4xl mx-48 pt-6'>Cube Inspector</div>
             <div className='p-6 mx-48 my-6 bg-gray-50 rounded-md'>
                 Name prefix:&nbsp;
                 <input

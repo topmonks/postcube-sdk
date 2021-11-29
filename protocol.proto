@@ -1,0 +1,50 @@
+syntax = "proto3";
+package postcube;
+
+message EncryptedPacket {
+  oneof encryption {
+    uint32 encryptionKeyId = 1;
+    bytes hashedSecret = 2;
+  }
+
+  bytes payload = 3;
+}
+
+message Packet {
+  uint32 commandId = 1;
+  // uint32 magic = 2;
+  uint32 expireAt = 3;
+  oneof command {
+    SetKey setKey = 4;
+    Unlock unlock = 5;
+    TimeSync timeSync = 6;
+    Nuke nuke = 7;
+    Protect protect = 8;
+  }
+}
+
+message SetKey {
+  uint32 keyIndex = 1;
+  bytes publicKey = 2;
+  uint32 expireAt = 3;
+}
+
+message Unlock {
+  uint32 lockId = 1;
+}
+
+message TimeSync {
+  uint32 timestamp = 1;
+}
+
+message Nuke {
+}
+
+message Protect {
+}
+
+message Result {
+  uint32 commandId = 1;
+  uint32 value = 2;
+  uint32 errorCode = 3;
+}

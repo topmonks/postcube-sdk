@@ -1,13 +1,21 @@
 
-import { jSignal } from 'jsignal'
+import { jSignal, Listener } from 'jsignal'
+
+import { EncodingEncryptionKeys } from '../encoding'
 
 export interface CubeCommands {
-    getBattery(): Promise<number>
-    syncTime(timestamp: number): Promise<void>
-    unlock(lockId: number): Promise<void>
-    setKey(keyIndex: number, publicKey: Buffer, expireAt: number): Promise<void>
-    factoryReset(): Promise<void>
+    setEncryptionKeys(keys: EncodingEncryptionKeys): void
+
+    readBattery(): Promise<number>
+
+    writeSyncTime(timestamp: number): Promise<void>
+    writeUnlock(lockId: number): Promise<number>
+    writeUnlockWithCustomCommand(command: Uint8Array): Promise<number>
+    writeSetKey(keyIndex: number, publicKey: Uint8Array, expireAt: number): Promise<void>
+    writeFactoryReset(): Promise<void>
 }
+
+export type StopNotifications = () => void
 
 export interface Cube extends CubeCommands {
     readonly onChange: jSignal<Cube>
@@ -19,10 +27,16 @@ export interface Cube extends CubeCommands {
 
     connect(): Promise<void>
     disconnect(): Promise<void>
-
     getRSSI(): Promise<number>
+
     read(serviceUUID: string, characteristicUUID: string): Promise<DataView>
     write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void>
+
+    listenForNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+    ): Promise<StopNotifications>
 }
 
 export interface ScanOptions {

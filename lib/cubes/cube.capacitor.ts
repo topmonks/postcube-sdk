@@ -1,16 +1,21 @@
 
-import { jSignal } from 'jsignal'
+import { jSignal, Listener } from 'jsignal'
 import {
     BleClient,
     BleDevice,
     ScanResult as CapacitorScanResult,
 } from '@capacitor-community/bluetooth-le'
 
+import {
+    SERVICE_BATTERY_UUID,
+    SERVICE_UUID,
+} from '../constants/bluetooth'
 import { parseBoxName } from '../helpers'
 import {
     Cube,
     ScanOptions,
     ScanResult,
+    StopNotifications,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
 } from './cube'
@@ -20,7 +25,10 @@ export const isEnabledCapacitor = async(): Promise<boolean> => {
     return await BleClient.isEnabled()
 }
 
-export const requestCubeCapacitor = async(namePrefix: string, services: string[]): Promise<Cube> => {
+export const requestCubeCapacitor = async(
+    namePrefix: string,
+    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+): Promise<Cube> => {
     await BleClient.initialize()
 
     const device = await BleClient.requestDevice({
@@ -114,6 +122,21 @@ export const CubeCapacitor = (device: BleDevice): Cube => {
         await BleClient.write(device?.deviceId, serviceUUID, characteristicUUID, value)
     }
 
+    const listenForNotifications = async(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+    ): Promise<StopNotifications> => {
+        await BleClient.startNotifications(device?.deviceId, serviceUUID, characteristicUUID, (value: DataView) => {
+            if (typeof listener === 'function') {
+                listener(value)
+            }
+        })
+
+        return () =>
+            BleClient.stopNotifications(device?.deviceId, serviceUUID, characteristicUUID)
+    }
+
     return (cube = {
         ...cubeCommands(() => cube),
         get id(): string {
@@ -137,5 +160,6 @@ export const CubeCapacitor = (device: BleDevice): Cube => {
         getRSSI,
         read,
         write,
+        listenForNotifications,
     })
 }

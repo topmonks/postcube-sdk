@@ -18,4 +18,8 @@ export const cubeErrors = {
         new CubeError('invalid_device_name', message),
     unknownBLECharacteristic: (message: string = 'Unknown bluetooth characteristic') =>
         new CubeError('unknown_ble_characteristic', message),
+    invalidSecretCode: (message: string = 'Invalid secret code') =>
+        new CubeError('invalid_secret_code', message),
+    invalidKeys: (message: string = 'Invalid encryption keys') =>
+        new CubeError('invalid_keys', message),
 }

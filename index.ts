@@ -1,27 +1,28 @@
 
-export { StateMachine } from './stateMachine'
-export { CubeError } from './errors'
+export { StateMachine } from './lib/stateMachine'
+export { CubeError } from './lib/errors'
 export {
-    splitCommand,
-    writeToCharacteristic,
-    parseResult,
-    parseResponseMessage,
-} from './helpers'
+    getFuture,
+    getFutureEpoch,
+    parseSecretCode,
+    parseResultValue,
+    parseBoxName,
+} from './lib/helpers'
 
 
 // Boxes API
 
-export { Cubes, Platform } from './cubes'
+export { Cubes, Platform } from './lib/cubes'
 export type {
     Cube,
     ScanOptions,
     ScanResult,
-} from './cubes'
+} from './lib/cubes'
 
 
 // React API
 
-export { useCubes, useCube } from './react'
+export { useCubes, useCube } from './lib/react'
 
 
 // Constants
@@ -32,27 +33,27 @@ export {
     DeliveryPointSchema,
     CreateSchema,
     TransitionValidationSchema,
-} from './constants/scheme'
+} from './lib/constants/scheme'
 export {
     TRANSPORT_PROVIDER_TYPES,
-} from './constants/transportProvider'
+} from './lib/constants/transportProvider'
 export {
     APP_TYPE,
-} from './constants/organisation'
+} from './lib/constants/organisation'
 export {
     POINT_TYPES,
     DIRECTION,
     STATE_NAMES,
     TRANSITION_NAME,
     STATE_VISIBILITY,
-} from './constants/delivery'
+} from './lib/constants/delivery'
 export {
     BOX_STATES,
     BOX_OPERATIONS,
     LOW_BATTERY_THRESHOLD_CENT,
     BLOCKING_DELIVERY_RECIPIENT_STATES,
     BLOCKING_DELIVERY_SENDER_STATES,
-} from './constants/box'
+} from './lib/constants/box'
 export {
     SERVICE_BATTERY_UUID,
     SERVICE_UUID_16,
@@ -91,4 +92,4 @@ export {
     BOX_RES_DFU_IN_PROGRESS,
     BOX_CHAR_RESULTS_INDEX,
     BOX_RESPONSE_MESSAGES,
-} from './constants/bluetooth'
+} from './lib/constants/bluetooth'

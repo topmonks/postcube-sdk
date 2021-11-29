@@ -1,9 +1,8 @@
 
 import { jSignal } from 'jsignal'
-import { unionBy } from 'lodash'
 
 import { cubeErrors } from '../errors'
-import { SERVICE_UUID } from '../constants/bluetooth'
+import { SERVICE_BATTERY_UUID, SERVICE_UUID } from '../constants/bluetooth'
 import {
     Cube,
     ScanOptions,
@@ -23,6 +22,7 @@ import {
 export enum Platform {
     web       = 'web',
     capacitor = 'capacitor',
+    node      = 'node',
 }
 
 export interface Cubes {
@@ -42,12 +42,17 @@ const isEnabled = async(): Promise<boolean> => {
         return isEnabledWeb()
     case Platform.capacitor:
         return isEnabledCapacitor()
+    case Platform.node:
+        return (await import('./cube.node')).isEnabledNode()
     }
 
     throw cubeErrors.invalidPlatform()
 }
 
-const requestCube = async(namePrefix: string, services: string[] = [SERVICE_UUID]): Promise<Cube> => {
+const requestCube = async(
+    namePrefix: string,
+    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+): Promise<Cube> => {
     let cube: Cube
     switch (Cubes.platform) {
     case Platform.web:
@@ -55,6 +60,9 @@ const requestCube = async(namePrefix: string, services: string[] = [SERVICE_UUID
         break
     case Platform.capacitor:
         cube = await requestCubeCapacitor(namePrefix, services)
+        break
+    case Platform.node:
+        cube = await (await import('./cube.node')).requestCubeNode(namePrefix, services)
         break
     default:
         throw cubeErrors.invalidPlatform()
@@ -82,6 +90,8 @@ const scanForCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
         return scanForCubesWeb(_options)
     case Platform.capacitor:
         return scanForCubesCapacitor(_options)
+    case Platform.node:
+        return (await import('./cube.node')).scanForCubesNode(_options)
     }
 
     throw cubeErrors.invalidPlatform()

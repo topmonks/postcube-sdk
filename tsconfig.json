@@ -1,9 +1,11 @@
 {
     "compilerOptions": {
+        "rootDir": ".",
         "module": "commonjs",
         "target": "es2015",
         "declaration": true,
         "outDir": "./build",
+        "allowJs": true,
         "strict": false,
         "lib": [
             "dom",
@@ -13,6 +15,8 @@
         ]
     },
     "include": [
+        "*.ts",
+        "*.js",
         "lib/**/*"
     ]
 }

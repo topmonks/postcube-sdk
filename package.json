@@ -17,23 +17,25 @@
   "main": "index.js",
   "scripts": {
     "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
-    "build": "tsc",
-    "watch": "tsc --watch"
+    "protocol:generate:typescript": "pbjs protocol.proto --ts protocol.pb.ts",
+    "build": "npm run protocol:generate:typescript && tsc",
+    "watch": "npm run protocol:generate:typescript && tsc --watch"
   },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-15",
     "@capacitor-community/bluetooth-le": "^1.6.0",
     "@capacitor/core": "^3.3.2",
     "cordova-plugin-ble-central": "^1.4.0",
+    "elliptic": "^6.5.4",
     "javascript-state-machine": "^3.1.0",
     "joi": "^17.4.0",
     "jsignal": "^2.5.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
     "pbjs": "0.0.14",
     "uninstall": "0.0.0"
   },
   "devDependencies": {
+    "@types/elliptic": "^6.4.14",
     "@types/lodash": "^4.14.177",
     "@types/noble": "0.0.40",
     "@types/react": "^17.0.36",
