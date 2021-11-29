@@ -12,32 +12,23 @@ jobs:
       - attach_workspace:
           at: ~/repo
       - run:
-          name: Install
+          name: Install dependecies
           command: npm run install
       - run:
-          name: Build
+          name: Build SDK
           command: npm run build
       - run:
-          name: Authenticate with registry
+          name: Create .npmrc file
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run:
           name: Publish package
-          command: npm publish
+          command: npm publish --access public
 
 workflows:
   version: 2
   deploy:
     jobs:
-      - hold_publish:
-          type: approval
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-      - publish:
-          requires:
-            - hold_publish
+      - publish
 
 
 
