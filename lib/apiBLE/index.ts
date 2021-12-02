@@ -1,10 +1,10 @@
 
 export {
-    Cubes,
+    PostCubeBLE,
     Platform,
-} from './cubes'
+} from './ble'
 export type {
-    Cube,
+    PostCube,
     ScanOptions,
     ScanResult,
-} from './cube'
+} from './postcube'

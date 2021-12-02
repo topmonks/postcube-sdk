@@ -2,7 +2,10 @@
 import * as elliptic from 'elliptic'
 
 import * as protocol from '../../protocol.pb'
-import { cubeErrors } from '../errors'
+import { bleErrors } from '../errors'
+import {
+    PACKET_SIZE,
+} from '../constants/bluetooth'
 import {
     getFutureEpoch,
     parseSecretCode,
@@ -21,7 +24,7 @@ const generateCommandId = async(options: EncodingOptions): Promise<number> => {
     return randomBytes(4).readUInt32LE(0)
 }
 
-export interface EncodingEncryptionKeys {
+export interface EncryptionKeys {
     keyIndex: number
     privateKey: string|Uint8Array|Buffer|number[]
     publicKey: string|Uint8Array|Buffer|number[]
@@ -29,14 +32,14 @@ export interface EncodingEncryptionKeys {
 
 export interface EncodingOptions {
     secretCode?: string|Iterable<number>
-    keys?: EncodingEncryptionKeys
+    keys?: EncryptionKeys
 }
 
-export const encodeCommand = async(command: Partial<protocol.Packet>, options: EncodingOptions = {}): Promise<DataView> => {
+export const encodeCommand = async(command: Partial<protocol.Packet>, options: EncodingOptions = {}): Promise<Uint8Array> => {
     const commandId = await generateCommandId(options)
     const expireAt = getFutureEpoch(24)
 
-    let encodedPacket = protocol.encodePacket({ ...command, commandId, expireAt })
+    let encodedPacket: Uint8Array = protocol.encodePacket({ ...command, commandId, expireAt })
 
     if (options.secretCode) {
         const hashedSecret = await hash(
@@ -67,5 +70,50 @@ export const encodeCommand = async(command: Partial<protocol.Packet>, options: E
         })
     }
 
-    return new DataView(encodedPacket)
+    return encodedPacket
+}
+
+export const chunkCommand = async(command: ArrayBufferLike): Promise<DataView[]> => {
+    const chunks: DataView[] = []
+
+    for (let index = 0; index < command.byteLength; index += PACKET_SIZE - 1) {
+        const buffer = new Uint8Array(PACKET_SIZE)
+
+        const hasMoreChunks = index + PACKET_SIZE - 1 < command.byteLength
+        buffer.set([ Number(hasMoreChunks) ], 0)
+
+        const chunk = new Uint8Array(command.slice(index, index + PACKET_SIZE - 1))
+
+        // buffer.set(chunk, 1) // for 0x0 padding at the end of chunk
+        buffer.set(chunk, hasMoreChunks ? 1 : PACKET_SIZE - chunk.byteLength) // for 0x0 padding between 
+
+        chunks.push(new DataView(chunk.buffer))
+    }
+
+    return chunks
+}
+
+export const parseResultChunk = async(chunk: DataView): Promise<{
+    buffer: number[]
+    isLast: boolean
+}> => {
+    const isLast = !chunk.getUint8(0)
+    const buffer: number[] = []
+
+    for (let offset = 1; offset < PACKET_SIZE; offset++) {
+        if (offset === chunk.byteLength) {
+            break
+        }
+
+        buffer.push(chunk.getUint8(offset))
+    }
+
+    return { buffer, isLast }
+}
+
+export const decodeChunkedResult = async(chunks: number[][]): Promise<protocol.Result> => {
+    const buffer = chunks.reduce((buffer, chunk) => [ ...chunk, ...buffer ], [])
+    const encodedCommand = new Uint8Array(buffer)
+
+    return await protocol.decodeResult(encodedCommand)
 }

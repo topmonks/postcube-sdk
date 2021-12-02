@@ -1,31 +1,35 @@
 
 export { StateMachine } from './lib/stateMachine'
 export {
-    CubeError,
-    APIError,
+    HttpError,
+    BleError,
+    HttpErrorCode,
+    BleErrorCode,
 } from './lib/errors'
 export {
     getFuture,
     getFutureEpoch,
     parseSecretCode,
-    parseResultValue,
     parseBoxName,
 } from './lib/helpers'
 
 
 // Boxes API
 
-export { Cubes, Platform } from './lib/cubes'
+export {
+    PostCubeBLE,
+    PostCube,
+    Platform,
+} from './lib/apiBLE'
 export type {
-    Cube,
     ScanOptions,
     ScanResult,
-} from './lib/cubes'
+} from './lib/apiBLE'
 
 
 // React API
 
-export { useCubes, useCube } from './lib/react'
+export { usePostCubeBLE, usePostCube } from './lib/react'
 
 
 // Constants
@@ -58,24 +62,17 @@ export {
     BLOCKING_DELIVERY_SENDER_STATES,
 } from './lib/constants/box'
 export {
+    PACKET_SIZE,
+    DEFAULT_TIMEOUT_CONNECT,
+    DEFAULT_TIMEOUT_DISCONNECT,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID_16,
-    SERVICE_UUID_16_CORDOVA,
     SERVICE_UUID,
     CHAR_BATTERY_LEVEL_UUID,
-    CHAR_SAVE_ACC_UUID,
-    CHAR_SET_KEY_UUID,
-    CHAR_UNLOCK_UUID,
-    CHAR_RESULT_UUID,
+    CHAR_VERSION_UUID,
     CHAR_STATUS_UUID,
-    CHAR_TIME_SYNC_UUID,
-    BOX_CID_RESERVED,
-    BOX_CID_SAVE_ACC,
-    BOX_CID_SET_KEY,
-    BOX_CID_UNLOCK,
-    BOX_CID_RESULT,
-    BOX_CID_STATUS,
-    BOX_CID_TIME_SYNC,
+    CHAR_CONTROL_UUID,
+    CHAR_RESULT_UUID,
     BOX_RES_UNDEFINED,
     BOX_RES_OK,
     BOX_RES_SAVE_FAILED,
@@ -93,6 +90,5 @@ export {
     BOX_RES_TIME_READ_FAILED,
     BOX_RES_SYSTEM_ERROR,
     BOX_RES_DFU_IN_PROGRESS,
-    BOX_CHAR_RESULTS_INDEX,
     BOX_RESPONSE_MESSAGES,
 } from './lib/constants/bluetooth'

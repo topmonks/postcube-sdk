@@ -1,8 +1,7 @@
 
 import { chunk } from 'lodash'
 
-import { BOX_CHAR_RESULTS_INDEX } from './constants/bluetooth'
-import { cubeErrors } from './errors'
+import { bleErrors } from './errors'
 
 export const getFuture = (hours: number) => {
     const future = new Date()
@@ -17,14 +16,10 @@ export const getFutureEpoch = (
 
 export const parseSecretCode = (secretCode: string) => {
     if (!/^[0-9a-fA-F]{8}$/.test(secretCode)) {
-        throw cubeErrors.invalidSecretCode()
+        throw bleErrors.invalidSecretCode()
     }
 
     return chunk(secretCode, 2).map(byte => parseInt(byte.join(''), 16))
-}
-
-export const parseResultValue = (value: DataView, characteristicUUID: string): number => {
-    return value.getInt8(BOX_CHAR_RESULTS_INDEX[characteristicUUID])
 }
 
 export const parseBoxName = (name: string): {
@@ -35,15 +30,15 @@ export const parseBoxName = (name: string): {
     const nameParts = String(name).split(' ')
 
     if (nameParts.length < 2) {
-        throw cubeErrors.invalidName()
+        throw bleErrors.invalidName()
     }
 
     if (!~nameParts[0].toLowerCase().indexOf('postcube')) {
-        throw cubeErrors.invalidName('Invalid prefix')
+        throw bleErrors.invalidName('Invalid prefix')
     }
 
     if (!/^\d{6}$/.test(nameParts[1])) {
-        throw cubeErrors.invalidName('Invalid PostCube ID')
+        throw bleErrors.invalidName('Invalid PostCube ID')
     }
 
     let isMultibox = false

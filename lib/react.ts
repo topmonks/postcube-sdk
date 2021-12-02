@@ -1,21 +1,21 @@
 
 import { useState, useEffect } from 'react'
 
-import { Cubes, Cube } from './cubes'
+import { PostCubeBLE, PostCube } from './apiBLE'
 
-export const useCubes = (
-    onCubeDiscovery?: (cube: Cube) => any,
-): Cubes => {
+export const usePostCubeBLE = (
+    onCubeDiscovery?: (postCube: PostCube) => any,
+): PostCubeBLE => {
     const [ toggle, setToggle ] = useState<boolean>(false)
 
-    const handleCubesChange = () => {
+    const handlePostCubeBLEChange = () => {
         setToggle(!toggle)
     }
 
     useEffect(() => {
-        Cubes.onChange.listen(handleCubesChange)
+        PostCubeBLE.onChange.listen(handlePostCubeBLEChange)
         return () =>
-            Cubes.onChange.unlisten(handleCubesChange)
+            PostCubeBLE.onChange.unlisten(handlePostCubeBLEChange)
     }, [])
 
     useEffect(() => {
@@ -23,33 +23,33 @@ export const useCubes = (
             return
         }
 
-        Cubes.onCubeDiscovered.listen(onCubeDiscovery)
+        PostCubeBLE.onCubeDiscovered.listen(onCubeDiscovery)
         return () =>
-            Cubes.onCubeDiscovered.unlisten(onCubeDiscovery)
+            PostCubeBLE.onCubeDiscovered.unlisten(onCubeDiscovery)
     }, [onCubeDiscovery])
 
-    return Cubes
+    return PostCubeBLE
 }
 
-export const useCube = (cube?: Cube): Cube => {
+export const usePostCube = (postCube?: PostCube): PostCube => {
     const [ toggle, setToggle ] = useState<boolean>(false)
-    const [ _cube, setCube ] = useState(cube)
+    const [ _postCube, setPostCube ] = useState(postCube)
 
-    const handleCubeChange = () => {
+    const handlePostCubeChange = () => {
         setToggle(!toggle)
     }
 
     useEffect(() => {
-        setCube(cube)
+        setPostCube(postCube)
 
-        if (!cube) {
+        if (!postCube) {
             return
         }
 
-        cube.onChange.listen(handleCubeChange)
+        postCube.addListener('change', handlePostCubeChange)
         return () =>
-            cube.onChange.unlisten(handleCubeChange)
-    }, [cube])
+            postCube.removeListener('change', handlePostCubeChange)
+    }, [postCube])
 
-    return _cube
+    return _postCube
 }

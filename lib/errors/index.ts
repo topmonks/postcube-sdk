@@ -1,32 +1,51 @@
 
-import { CubeError } from './cubeError'
-import { APIError } from './apiError'
+import { HttpError } from './httpError'
+import { BleError } from './bleError'
+import { HttpErrorCode, BleErrorCode } from './codes'
 
-export { CubeError }
-export { APIError }
-
-export const apiErrors = {
-    invalidCredentials: (message: string = 'Invalid credentials') =>
-        new APIError('invalid_credentials', message),
+export {
+    HttpError,
+    BleError,
+    HttpErrorCode,
+    BleErrorCode,
 }
 
-export const cubeErrors = {
+export const httpErrors = {
+    unauthorized: (message: string = 'Unauthorized') =>
+        new HttpError(HttpErrorCode.unauthorized, message),
+
+    forbidden: (message: string = 'Forbidden') =>
+        new HttpError(HttpErrorCode.forbidden, message),
+
+    serverError: (message: string = 'Server error') =>
+        new HttpError(HttpErrorCode.serverError, message),
+}
+
+export const bleErrors = {
     notSupported: (message: string) =>
-        new CubeError('not_supported', message),
+        new BleError(BleErrorCode.notSupported, message),
+
     invalidPlatform: (message: string = 'Invalid platform') =>
-        new CubeError('invalid_platform', message),
+        new BleError(BleErrorCode.invalidPlatform, message),
+
     bluetoothUnavailable: () =>
-        new CubeError('bluetooth_unavailable', 'Bluetooth is unavailable'),
+        new BleError(BleErrorCode.bluetoothUnavailable, 'Bluetooth is unavailable'),
+
     bluetoothDisabled: () =>
-        new CubeError('bluetooth_disabled', 'Bluetooth is currently disabled'),
+        new BleError(BleErrorCode.bluetoothDisabled, 'Bluetooth is currently disabled'),
+
     noBoxConnected: () =>
-        new CubeError('no_box_connected', 'No box is currently connected'),
+        new BleError(BleErrorCode.noBoxConnected, 'No box is currently connected'),
+
     invalidName: (message: string = 'Invalid PostCube device name') =>
-        new CubeError('invalid_device_name', message),
+        new BleError(BleErrorCode.invalidName, message),
+
     unknownBLECharacteristic: (message: string = 'Unknown bluetooth characteristic') =>
-        new CubeError('unknown_ble_characteristic', message),
+        new BleError(BleErrorCode.unknownBLECharacteristic, message),
+
     invalidSecretCode: (message: string = 'Invalid secret code') =>
-        new CubeError('invalid_secret_code', message),
+        new BleError(BleErrorCode.invalidSecretCode, message),
+
     invalidKeys: (message: string = 'Invalid encryption keys') =>
-        new CubeError('invalid_keys', message),
+        new BleError(BleErrorCode.invalidKeys, message),
 }

@@ -27,6 +27,7 @@
     "@capacitor/core": "^3.3.2",
     "cordova-plugin-ble-central": "^1.4.0",
     "elliptic": "^6.5.4",
+    "events": "^3.3.0",
     "javascript-state-machine": "^3.1.0",
     "joi": "^17.4.0",
     "jsignal": "^2.5.0",

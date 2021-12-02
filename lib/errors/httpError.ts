@@ -1,5 +1,5 @@
 
-export class APIError extends Error {
+export class HttpError extends Error {
     name: string
 
     constructor(name: string, message: string, ) {
