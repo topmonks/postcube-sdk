@@ -21,6 +21,9 @@
     "build": "npm run protocol:generate:typescript && tsc",
     "watch": "npm run protocol:generate:typescript && tsc --watch"
   },
+  "browser": {
+    "crypto": true
+  },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-15",
     "@capacitor-community/bluetooth-le": "^1.6.0",
