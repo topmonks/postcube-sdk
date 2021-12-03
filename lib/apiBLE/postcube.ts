@@ -63,6 +63,7 @@ export abstract class PostCube extends EventEmitter {
 
     setEncryptionKeys(keys: EncryptionKeys): void {
         this.encryptionKeys = keys
+        this.emit('change', this)
     }
 
     async readBattery(): Promise<number> {
