@@ -6,7 +6,7 @@ import {
     ScanResult as CapacitorScanResult,
 } from '@capacitor-community/bluetooth-le'
 
-import { logger } from '../logger'
+import { PostCubeLogger } from '../logger'
 import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
@@ -109,14 +109,14 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     private handleDisconnect(deviceId: string) {
-        logger.debug(`PostCube (ID: ${this.id}) has been disconnected [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`PostCube (ID: ${this.id}) has been disconnected [@capacitor-community/bluetooth-le]`)
 
         this._isConnected = false
         this.emit('change', this)
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        logger.debug(`Connecting to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
 
         await BleClient.connect(this.deviceId, this.handleDisconnect, { timeout: timeoutMs })
         this._isConnected = true
@@ -124,7 +124,7 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        logger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
 
         await BleClient.disconnect(this.deviceId)
         this._isConnected = false
@@ -132,7 +132,7 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     async read(serviceUUID: string, characteristicUUID: string): Promise<DataView> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Reading value from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
         )
@@ -141,7 +141,7 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     async write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID, value },
             `Writing value to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
         )
@@ -150,7 +150,7 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>): Promise<StopNotifications> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
         )
@@ -162,7 +162,7 @@ export class PostCubeCapacitor extends PostCube {
         })
 
         return () => {
-            logger.debug(
+            PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
                 `Stopped listening for value change on PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
             )

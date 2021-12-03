@@ -1,7 +1,7 @@
 
 import { jSignal, Listener } from 'jsignal'
 
-export interface Logger {
+export interface PostCubeLogger {
     readonly stdOut: jSignal<object>
     readonly stdErr: jSignal<object>
 
@@ -25,24 +25,24 @@ const composeLog = (level: number, data: any, message?: string) => {
     }
 }
 
-export const logger: Logger = {
+export const PostCubeLogger: PostCubeLogger = {
     stdOut,
     stdErr,
     ignoreDebug: true,
     writeToProcessStd: true,
     log(data: any, message?: string) {
-        logger.info(data, message)
+        PostCubeLogger.info(data, message)
     },
     debug(data: any, message?: string) {
-        if (logger.ignoreDebug) {
+        if (PostCubeLogger.ignoreDebug) {
             return
         }
 
         const log = composeLog(10, data, message)
 
-        logger.stdOut.dispatch(log)
+        PostCubeLogger.stdOut.dispatch(log)
 
-        if (logger.writeToProcessStd) {
+        if (PostCubeLogger.writeToProcessStd) {
             if (typeof process?.stdout?.write === 'function') {
                 process.stdout.write(JSON.stringify(log) + '\n')
                 return
@@ -54,9 +54,9 @@ export const logger: Logger = {
     info(data: any, message?: string) {
         const log = composeLog(20, data, message)
 
-        logger.stdOut.dispatch(log)
+        PostCubeLogger.stdOut.dispatch(log)
 
-        if (logger.writeToProcessStd) {
+        if (PostCubeLogger.writeToProcessStd) {
             if (typeof process?.stdout?.write === 'function') {
                 process.stdout.write(JSON.stringify(log) + '\n')
                 return
@@ -68,9 +68,9 @@ export const logger: Logger = {
     error(data: any, message?: string) {
         const log = composeLog(40, data, message)
 
-        logger.stdErr.dispatch(log)
+        PostCubeLogger.stdErr.dispatch(log)
 
-        if (logger.writeToProcessStd) {
+        if (PostCubeLogger.writeToProcessStd) {
             if (typeof process?.stderr?.write === 'function') {
                 process.stderr.write(JSON.stringify(log) + '\n')
                 return

@@ -2,7 +2,7 @@
 import { Listener } from 'jsignal'
 import * as noble from '@abandonware/noble'
 
-import { logger } from '../logger'
+import { PostCubeLogger } from '../logger'
 import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
@@ -116,21 +116,21 @@ export class PostCubeNode extends PostCube {
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        logger.debug(`Connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
 
         await this.peripheral.connectAsync()
         this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        logger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@abandonware/noble]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@abandonware/noble]`)
 
         await this.peripheral.disconnectAsync()
         this.emit('change', this)
     }
 
     async read(serviceUUID: string, characteristicUUID: string): Promise<DataView> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Reading value from PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
@@ -142,7 +142,7 @@ export class PostCubeNode extends PostCube {
     }
 
     async write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID, value },
             `Writing value to PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
@@ -154,7 +154,7 @@ export class PostCubeNode extends PostCube {
     }
 
     async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>): Promise<StopNotifications> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
@@ -169,7 +169,7 @@ export class PostCubeNode extends PostCube {
         // characteristic.addListener()
 
         return () => {
-            logger.debug(
+            PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
                 `Stopped listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
             )

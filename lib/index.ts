@@ -12,6 +12,7 @@ export {
     parseSecretCode,
     parseBoxName,
 } from './helpers'
+export { PostCubeLogger } from './logger'
 
 
 // Boxes API

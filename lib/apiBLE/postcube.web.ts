@@ -1,7 +1,7 @@
 
 import { Listener } from 'jsignal'
 
-import { logger } from '../logger'
+import { PostCubeLogger } from '../logger'
 import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
@@ -81,14 +81,14 @@ export class PostCubeWeb extends PostCube {
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        logger.debug(`Connecting to PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [WebBluetooth]`)
 
         this.gattServer = await this.gattServer.connect()
         this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        logger.debug(`Disconnecting from PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [WebBluetooth]`)
 
         if (this.isConnected) {
             await this.gattServer.disconnect()
@@ -99,21 +99,21 @@ export class PostCubeWeb extends PostCube {
     }
 
     async read(serviceUUID: string, characteristicUUID: string): Promise<DataView> {
-        logger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [WebBluetooth]`)
 
         const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
         return characteristic.readValue()
     }
 
     async write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void> {
-        logger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [WebBluetooth]`)
 
         const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
         await characteristic.writeValue(value)
     }
 
     async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>): Promise<StopNotifications> {
-        logger.debug(
+        PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [WebBluetooth]`,
         )
@@ -128,7 +128,7 @@ export class PostCubeWeb extends PostCube {
         characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
 
         return () => {
-            logger.debug(
+            PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
                 `Stopped listening for value change on PostCube (ID: ${this.id}) [WebBluetooth]`,
             )

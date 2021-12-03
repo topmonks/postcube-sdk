@@ -3,7 +3,7 @@ import { EventEmitter } from 'events'
 import { Listener } from 'jsignal'
 
 import * as protocol from '../protocol.pb'
-import { logger } from '../logger'
+import { PostCubeLogger } from '../logger'
 import {
     SERVICE_UUID,
     CHAR_CONTROL_UUID,
@@ -74,11 +74,11 @@ export abstract class PostCube extends EventEmitter {
 
         const chunks = await chunkCommand(command)
 
-        logger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
+        PostCubeLogger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
 
         for (const index in chunks) {
             await this.write(SERVICE_UUID, CHAR_CONTROL_UUID, chunks[index])
-            logger.log(`Packet ${index + 1}/${chunks.length} has been sent`)
+            PostCubeLogger.log(`Packet ${index + 1}/${chunks.length} has been sent`)
         }
     }
 
@@ -93,7 +93,7 @@ export abstract class PostCube extends EventEmitter {
             const handleNotification = async(value: DataView) => {
                 const { buffer, isLast } = await parseResultChunk(value)
 
-                logger.log({ buffer, isLast }, `Receiving result packet from PostCube (ID: ${this.id})`)
+                PostCubeLogger.log({ buffer, isLast }, `Receiving result packet from PostCube (ID: ${this.id})`)
 
                 chunks.push(buffer)
 
@@ -101,7 +101,7 @@ export abstract class PostCube extends EventEmitter {
                     stopNotifications()
 
                     decodeChunkedResult(chunks).then(result => {
-                        logger.log({ result }, `Result received from PostCube (ID: ${this.id}) has been decoded`)
+                        PostCubeLogger.log({ result }, `Result received from PostCube (ID: ${this.id}) has been decoded`)
 
                         resolve(result)
                     }).catch(reject)
@@ -121,7 +121,7 @@ export abstract class PostCube extends EventEmitter {
     async writeSyncTime(timestamp: number): Promise<void> {
         await this.checkEncryptionKeys()
 
-        logger.debug({ timestamp }, `writeSyncTime to PostCube (ID: ${this.id})`)
+        PostCubeLogger.debug({ timestamp }, `writeSyncTime to PostCube (ID: ${this.id})`)
 
         const command = await encodeCommand({
             timeSync: {
@@ -135,7 +135,7 @@ export abstract class PostCube extends EventEmitter {
     }
 
     async writeUnlock(lockId: number): Promise<void> {
-        logger.debug({ lockId }, `writeUnlock to PostCube (ID: ${this.id})`)
+        PostCubeLogger.debug({ lockId }, `writeUnlock to PostCube (ID: ${this.id})`)
 
         const command = await encodeCommand({
             unlock: { lockId },
@@ -152,7 +152,7 @@ export abstract class PostCube extends EventEmitter {
         publicKey: Uint8Array,
         expireAt: number,
     ): Promise<void> {
-        logger.debug({ secretCode, keyIndex, publicKey, expireAt }, `writeSetKey to PostCube (ID: ${this.id})`)
+        PostCubeLogger.debug({ secretCode, keyIndex, publicKey, expireAt }, `writeSetKey to PostCube (ID: ${this.id})`)
 
         const command = await encodeCommand({
             setKey: {
@@ -170,7 +170,7 @@ export abstract class PostCube extends EventEmitter {
     async writeFactoryReset(): Promise<void> {
         await this.checkEncryptionKeys()
 
-        logger.debug(`writeFactoryReset to PostCube (ID: ${this.id})`)
+        PostCubeLogger.debug(`writeFactoryReset to PostCube (ID: ${this.id})`)
 
         const command = await encodeCommand({
             nuke: {},
