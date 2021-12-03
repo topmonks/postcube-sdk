@@ -1,5 +1,5 @@
 
-import * as EventEmitter from 'events'
+import { EventEmitter } from 'events'
 import { Listener } from 'jsignal'
 
 import * as protocol from '../protocol.pb'
