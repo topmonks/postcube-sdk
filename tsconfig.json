@@ -1,13 +1,12 @@
 {
     "compilerOptions": {
-        "rootDir": ".",
-        "module": "commonjs",
-        "target": "es2015",
+        "rootDir": "./lib",
+        "module": "esnext",
+        "target": "esnext",
         "declaration": true,
         "outDir": "./build",
         "allowJs": true,
         "strict": false,
-        "experimentalDecorators": true,
         "lib": [
             "dom",
             "dom.iterable",
@@ -16,8 +15,6 @@
         ]
     },
     "include": [
-        "*.ts",
-        "*.js",
         "lib/**/*"
     ]
 }

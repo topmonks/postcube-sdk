@@ -12,7 +12,7 @@ export const getFuture = (hours: number) => {
 export const getFutureEpoch = (
     hours: number,
     millisecondPrecision: boolean = false,
-) => getFuture(hours).getTime() / (1 + Number(!millisecondPrecision) * 999)
+) => getFuture(hours).getTime() / (millisecondPrecision ? 1 : 1000)
 
 export const parseSecretCode = (secretCode: string) => {
     if (!/^[0-9a-fA-F]{8}$/.test(secretCode)) {

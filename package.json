@@ -1,6 +1,6 @@
 {
   "name": "@topmonks/postcube",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "PostCube public SDK",
   "author": "TopMonks <info@topmonks.com>",
   "license": "EPL-2.0",
@@ -17,7 +17,7 @@
   "main": "index.js",
   "scripts": {
     "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
-    "protocol:generate:typescript": "pbjs protocol.proto --ts protocol.pb.ts",
+    "protocol:generate:typescript": "pbjs protocol.proto --ts lib/protocol.pb.ts",
     "build": "npm run protocol:generate:typescript && tsc",
     "watch": "npm run protocol:generate:typescript && tsc --watch"
   },

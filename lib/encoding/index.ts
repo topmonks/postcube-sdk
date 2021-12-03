@@ -1,7 +1,7 @@
 
 import * as elliptic from 'elliptic'
 
-import * as protocol from '../../protocol.pb'
+import * as protocol from '../protocol.pb'
 import { bleErrors } from '../errors'
 import {
     PACKET_SIZE,

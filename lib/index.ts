@@ -1,17 +1,17 @@
 
-export { StateMachine } from './lib/stateMachine'
+export { StateMachine } from './stateMachine'
 export {
     HttpError,
     BleError,
     HttpErrorCode,
     BleErrorCode,
-} from './lib/errors'
+} from './errors'
 export {
     getFuture,
     getFutureEpoch,
     parseSecretCode,
     parseBoxName,
-} from './lib/helpers'
+} from './helpers'
 
 
 // Boxes API
@@ -20,16 +20,16 @@ export {
     PostCubeBLE,
     PostCube,
     Platform,
-} from './lib/apiBLE'
+} from './apiBLE'
 export type {
     ScanOptions,
     ScanResult,
-} from './lib/apiBLE'
+} from './apiBLE'
 
 
 // React API
 
-export { usePostCubeBLE, usePostCube } from './lib/react'
+export { usePostCubeBLE, usePostCube } from './react'
 
 
 // Constants
@@ -40,27 +40,27 @@ export {
     DeliveryPointSchema,
     CreateSchema,
     TransitionValidationSchema,
-} from './lib/constants/scheme'
+} from './constants/scheme'
 export {
     TRANSPORT_PROVIDER_TYPES,
-} from './lib/constants/transportProvider'
+} from './constants/transportProvider'
 export {
     APP_TYPE,
-} from './lib/constants/organisation'
+} from './constants/organisation'
 export {
     POINT_TYPES,
     DIRECTION,
     STATE_NAMES,
     TRANSITION_NAME,
     STATE_VISIBILITY,
-} from './lib/constants/delivery'
+} from './constants/delivery'
 export {
     BOX_STATES,
     BOX_OPERATIONS,
     LOW_BATTERY_THRESHOLD_CENT,
     BLOCKING_DELIVERY_RECIPIENT_STATES,
     BLOCKING_DELIVERY_SENDER_STATES,
-} from './lib/constants/box'
+} from './constants/box'
 export {
     PACKET_SIZE,
     DEFAULT_TIMEOUT_CONNECT,
@@ -91,4 +91,4 @@ export {
     BOX_RES_SYSTEM_ERROR,
     BOX_RES_DFU_IN_PROGRESS,
     BOX_RESPONSE_MESSAGES,
-} from './lib/constants/bluetooth'
+} from './constants/bluetooth'

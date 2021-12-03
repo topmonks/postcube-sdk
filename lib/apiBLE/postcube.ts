@@ -2,7 +2,7 @@
 import * as EventEmitter from 'events'
 import { Listener } from 'jsignal'
 
-import * as protocol from '../../protocol.pb'
+import * as protocol from '../protocol.pb'
 import { logger } from '../logger'
 import {
     SERVICE_UUID,
