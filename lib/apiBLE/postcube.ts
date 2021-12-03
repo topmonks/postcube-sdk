@@ -36,14 +36,16 @@ export interface ScanResult {
 }
 
 export abstract class PostCube extends EventEmitter {
+    static EncryptionKeys: {
+        [postCubeId: string]: NonNullable<EncryptionKeys>
+    } = {}
+
     readonly id: string
     readonly name: string
     readonly isMultibox: boolean
 
     abstract readonly deviceId: string
     abstract readonly isConnected: boolean
-
-    private encryptionKeys: EncryptionKeys = null
 
     constructor(name: string) {
         super()
@@ -56,13 +58,29 @@ export abstract class PostCube extends EventEmitter {
     }
 
     private async checkEncryptionKeys() {
-        if (!this.encryptionKeys) {
+        if (
+            !PostCube.EncryptionKeys[this.id] ||
+            !PostCube.EncryptionKeys[this.id].publicKey ||
+            !PostCube.EncryptionKeys[this.id].privateKey ||
+            typeof PostCube.EncryptionKeys[this.id].keyIndex !== 'number'
+        ) {
+            PostCubeLogger.error({ id: this.id }, 'Operation cannot proceed without encryption keys')
             throw bleErrors.invalidKeys(`Missing keys for PostCube (ID: ${this.id})`)
         }
     }
 
-    setEncryptionKeys(keys: EncryptionKeys): void {
-        this.encryptionKeys = keys
+    setKeyIndex(keyIndex: number|null): void {
+        (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).keyIndex = keyIndex
+        this.emit('change', this)
+    }
+
+    setPublicKey(publicKey: Uint8Array|number[]|null): void {
+        (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).publicKey = publicKey
+        this.emit('change', this)
+    }
+
+    setPrivateKey(privateKey: Uint8Array|number[]|null): void {
+        (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).privateKey = privateKey
         this.emit('change', this)
     }
 
@@ -128,7 +146,7 @@ export abstract class PostCube extends EventEmitter {
             timeSync: {
                 timestamp,
             },
-        }, { keys: this.encryptionKeys })
+        }, { keys: PostCube.EncryptionKeys[this.id] })
 
         const result = await this.writeCommandAndReadResult(command)
 
@@ -175,7 +193,7 @@ export abstract class PostCube extends EventEmitter {
 
         const command = await encodeCommand({
             nuke: {},
-        }, { keys: this.encryptionKeys })
+        }, { keys: PostCube.EncryptionKeys[this.id] })
 
         const result = await this.writeCommandAndReadResult(command)
 

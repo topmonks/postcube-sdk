@@ -25,9 +25,9 @@ const generateCommandId = async(options: EncodingOptions): Promise<number> => {
 }
 
 export interface EncryptionKeys {
-    keyIndex: number
-    privateKey: string|Uint8Array|Buffer|number[]
-    publicKey: string|Uint8Array|Buffer|number[]
+    keyIndex?: number
+    privateKey?: Uint8Array|number[]
+    publicKey?: Uint8Array|number[]
 }
 
 export interface EncodingOptions {
@@ -77,15 +77,10 @@ export const chunkCommand = async(command: ArrayBufferLike): Promise<DataView[]>
     const chunks: DataView[] = []
 
     for (let index = 0; index < command.byteLength; index += PACKET_SIZE - 1) {
-        const buffer = new Uint8Array(PACKET_SIZE)
+        const chunk = new Uint8Array(PACKET_SIZE)
 
-        const hasMoreChunks = index + PACKET_SIZE - 1 < command.byteLength
-        buffer.set([ Number(hasMoreChunks) ], 0)
-
-        const chunk = new Uint8Array(command.slice(index, index + PACKET_SIZE - 1))
-
-        // buffer.set(chunk, 1) // for 0x0 padding at the end of chunk
-        buffer.set(chunk, hasMoreChunks ? 1 : PACKET_SIZE - chunk.byteLength) // for 0x0 padding between 
+        chunk.set([ Number(index + PACKET_SIZE - 1 < command.byteLength) ], 0)
+        chunk.set(new Uint8Array(command.slice(index, index + PACKET_SIZE - 1)), 1)
 
         chunks.push(new DataView(chunk.buffer))
     }
@@ -97,8 +92,8 @@ export const parseResultChunk = async(chunk: DataView): Promise<{
     buffer: number[]
     isLast: boolean
 }> => {
-    const isLast = !chunk.getUint8(0)
     const buffer: number[] = []
+    const isLast = !chunk.getUint8(0)
 
     for (let offset = 1; offset < PACKET_SIZE; offset++) {
         if (offset === chunk.byteLength) {
