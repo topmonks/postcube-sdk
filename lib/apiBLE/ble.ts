@@ -2,6 +2,7 @@
 import { jSignal } from 'jsignal'
 
 import { bleErrors } from '../errors'
+import { logger } from '../logger'
 import { SERVICE_BATTERY_UUID, SERVICE_UUID } from '../constants/bluetooth'
 import {
     PostCube,
@@ -51,6 +52,8 @@ const isEnabled = async(): Promise<boolean> => {
 }
 
 const requestPostCube = async(namePrefix: string): Promise<PostCube> => {
+    logger.debug({ platform: PostCubeBLE.platform }, 'Requesting PostCube')
+
     let postCube: PostCube
     switch (PostCubeBLE.platform) {
     case Platform.web:
@@ -66,6 +69,11 @@ const requestPostCube = async(namePrefix: string): Promise<PostCube> => {
     default:
         throw bleErrors.invalidPlatform()
     }
+
+    logger.debug({
+        platform: PostCubeBLE.platform,
+        postCube,
+    }, 'PostCube found')
 
     return postCube
 }
@@ -83,6 +91,11 @@ const scanForPostCubes = async(options: ScanOptions = {}): Promise<ScanResult> =
             }
         },
     }
+
+    logger.debug({
+        platform: PostCubeBLE.platform,
+        options: _options,
+    }, 'Scanning for PostCube with options')
 
     switch (PostCubeBLE.platform) {
     case Platform.web:
