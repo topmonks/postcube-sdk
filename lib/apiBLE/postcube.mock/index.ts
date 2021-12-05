@@ -54,8 +54,6 @@ export const requestPostCubeMock = async(
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
     config: PostCubeMockConfig = postCubeMockConfig,
 ): Promise<PostCube> => {
-    // const device = await
-
     if (config.availableDevices.length > 0) {
         return new PostCubeMock(config, config.availableDevices[0])
     }
@@ -70,7 +68,7 @@ export const scanForPostCubesMock = async(
 ): Promise<ScanResult> => {
     return {
         async stopScan() {},
-        promise: requestPostCubeMock(options.namePrefix, services).then(postCube => {
+        promise: requestPostCubeMock(options.namePrefix, services, config).then(postCube => {
             if (typeof options?.onDiscovery === 'function') {
                 options.onDiscovery(postCube)
             }
