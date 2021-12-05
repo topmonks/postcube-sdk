@@ -6,13 +6,16 @@ export enum HttpErrorCode {
 }
 
 export enum BleErrorCode {
+    unknownError             = 'unknown_error',
     notSupported             = 'not_supported',
     invalidPlatform          = 'invalid_platform',
     bluetoothUnavailable     = 'bluetooth_unavailable',
     bluetoothDisabled        = 'bluetooth_disabled',
     noBoxConnected           = 'no_box_connected',
     invalidName              = 'invalid_device_name',
+    unknownBLEService        = 'unknown_ble_service',
     unknownBLECharacteristic = 'unknown_ble_characteristic',
     invalidSecretCode        = 'invalid_secret_code',
     invalidKeys              = 'invalid_keys',
+    invalidCommand           = 'invalid_command',
 }

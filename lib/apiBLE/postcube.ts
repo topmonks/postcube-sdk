@@ -8,13 +8,15 @@ import {
     SERVICE_UUID,
     CHAR_CONTROL_UUID,
     CHAR_RESULT_UUID,
+    RES_OK,
+    RESPONSE_MESSAGES,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
 import { parseBoxName } from '../helpers'
 import {
     encodeCommand,
-    parseResultChunk,
-    chunkCommand,
+    chunkBuffer,
+    parseBufferChunk,
     decodeChunkedResult,
     EncryptionKeys,
 } from '../encoding'
@@ -91,7 +93,7 @@ export abstract class PostCube extends EventEmitter {
     async writeCommand(command: ArrayBufferLike): Promise<void> {
         this.connect()
 
-        const chunks = await chunkCommand(command)
+        const chunks = await chunkBuffer(command)
 
         PostCubeLogger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
 
@@ -110,7 +112,7 @@ export abstract class PostCube extends EventEmitter {
             let stopNotifications: Listener<DataView>
 
             const handleNotification = async(value: DataView) => {
-                const { buffer, isLast } = await parseResultChunk(value)
+                const { buffer, isLast } = await parseBufferChunk(value)
 
                 PostCubeLogger.log({ buffer, isLast }, `Receiving result packet from PostCube (ID: ${this.id})`)
 
@@ -150,7 +152,13 @@ export abstract class PostCube extends EventEmitter {
 
         const result = await this.writeCommandAndReadResult(command)
 
-        // TODO: return result
+        if (result.value === RES_OK) {
+            PostCubeLogger.debug({ timestamp }, `writeSyncTime was successfully executed on PostCube (ID: ${this.id})`)
+            return
+        }
+
+        PostCubeLogger.error({ timestamp, result }, `writeSyncTime failed to execute on PostCube (ID: ${this.id})`)
+        throw RESPONSE_MESSAGES[result.value]
     }
 
     async writeUnlock(lockId: number): Promise<void> {
@@ -158,32 +166,48 @@ export abstract class PostCube extends EventEmitter {
 
         const command = await encodeCommand({
             unlock: { lockId },
-        })
+        }, { keys: PostCube.EncryptionKeys[this.id] })
 
         const result = await this.writeCommandAndReadResult(command)
 
-        // TODO: return result
+        if (result.value === RES_OK) {
+            PostCubeLogger.debug({ lockId }, `writeUnlock was successfully executed on PostCube (ID: ${this.id})`)
+            return
+        }
+
+        PostCubeLogger.error({ lockId, result }, `writeUnlock failed to execute on PostCube (ID: ${this.id})`)
+        throw RESPONSE_MESSAGES[result.value]
     }
 
     async writeSetKey(
         secretCode: string,
         keyIndex: number,
-        publicKey: Uint8Array,
+        publicKey: Uint8Array|number[],
         expireAt: number,
     ): Promise<void> {
         PostCubeLogger.debug({ secretCode, keyIndex, publicKey, expireAt }, `writeSetKey to PostCube (ID: ${this.id})`)
+
+        const _publicKey = publicKey instanceof Uint8Array ?
+            publicKey :
+            new Uint8Array(publicKey)
 
         const command = await encodeCommand({
             setKey: {
                 keyIndex,
                 expireAt,
-                publicKey,
+                publicKey: _publicKey,
             },
         }, { secretCode })
 
         const result = await this.writeCommandAndReadResult(command)
 
-        // TODO: return result
+        if (result.value === RES_OK) {
+            PostCubeLogger.debug({ secretCode, keyIndex, publicKey, expireAt }, `writeSetKey was successfully executed on PostCube (ID: ${this.id})`)
+            return
+        }
+
+        PostCubeLogger.error({ secretCode, keyIndex, publicKey, expireAt, result }, `writeSetKey failed to execute on PostCube (ID: ${this.id})`)
+        throw RESPONSE_MESSAGES[result.value]
     }
 
     async writeFactoryReset(): Promise<void> {
@@ -197,7 +221,13 @@ export abstract class PostCube extends EventEmitter {
 
         const result = await this.writeCommandAndReadResult(command)
 
-        // TODO: return result
+        if (result.value === RES_OK) {
+            PostCubeLogger.debug(`writeFactoryReset was successfully executed on PostCube (ID: ${this.id})`)
+            return
+        }
+
+        PostCubeLogger.error({ result }, `writeFactoryReset failed to execute on PostCube (ID: ${this.id})`)
+        throw RESPONSE_MESSAGES[result.value]
     }
 
     abstract connect(timeoutMs?: number): Promise<void>

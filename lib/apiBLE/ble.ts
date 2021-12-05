@@ -83,11 +83,11 @@ const scanForPostCubes = async(options: ScanOptions = {}): Promise<ScanResult> =
 
     const _options: ScanOptions = {
         ...options,
-        onDiscovery: cube => {
-            PostCubeBLE.onCubeDiscovered.dispatch(cube)
+        onDiscovery: postCube => {
+            PostCubeBLE.onCubeDiscovered.dispatch(postCube)
 
             if (typeof options?.onDiscovery === 'function') {
-                options.onDiscovery(cube)
+                options.onDiscovery(postCube)
             }
         },
     }

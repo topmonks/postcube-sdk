@@ -14,7 +14,19 @@ export const getFutureEpoch = (
     millisecondPrecision: boolean = false,
 ) => getFuture(hours).getTime() / (millisecondPrecision ? 1 : 1000)
 
-export const parseSecretCode = (secretCode: string) => {
+export const parseSecretCode = (secretCode: string|Iterable<number>): number[] => {
+    if (typeof secretCode !== 'string') {
+        const buffer: number[] = []
+
+        for (const byte of secretCode) {
+            if (byte) {
+                buffer.push(byte)
+            }
+        }
+
+        return buffer
+    }
+
     if (!/^[0-9a-fA-F]{8}$/.test(secretCode)) {
         throw bleErrors.invalidSecretCode()
     }

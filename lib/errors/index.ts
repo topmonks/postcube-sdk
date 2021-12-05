@@ -22,6 +22,9 @@ export const httpErrors = {
 }
 
 export const bleErrors = {
+    unknownError: (message: string) =>
+        new BleError(BleErrorCode.unknownError, message),
+
     notSupported: (message: string) =>
         new BleError(BleErrorCode.notSupported, message),
 
@@ -40,6 +43,9 @@ export const bleErrors = {
     invalidName: (message: string = 'Invalid PostCube device name') =>
         new BleError(BleErrorCode.invalidName, message),
 
+    unknownBLEService: (message: string = 'Unknown bluetooth service') =>
+        new BleError(BleErrorCode.unknownBLEService, message),
+
     unknownBLECharacteristic: (message: string = 'Unknown bluetooth characteristic') =>
         new BleError(BleErrorCode.unknownBLECharacteristic, message),
 
@@ -48,4 +54,7 @@ export const bleErrors = {
 
     invalidKeys: (message: string = 'Invalid encryption keys') =>
         new BleError(BleErrorCode.invalidKeys, message),
+
+    invalidCommand: (message: string = 'Invalid PostCube BLE command') =>
+        new BleError(BleErrorCode.invalidCommand, message),
 }
