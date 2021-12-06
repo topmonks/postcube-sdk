@@ -107,6 +107,11 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
 
             resultCode = postCubeMock.deviceConfig.setKeyResult ?
                 postCubeMock.deviceConfig.setKeyResult : RES_OK
+
+            if (resultCode === RES_OK) {
+                postCubeMock.setKeyIndex(packet.setKey.keyIndex)
+                postCubeMock.setPublicKey(packet.setKey.publicKey)
+            }
             break
         case !!packet.nuke:
             if (postCubeMock.deviceConfig.factoryResetDelayMs) {

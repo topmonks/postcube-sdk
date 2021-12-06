@@ -150,12 +150,14 @@ export class PostCubeMock extends PostCube {
         await validateCharacteristic(serviceUUID, characteristicUUID)
 
         const key = `${serviceUUID}_${characteristicUUID}`
-
+console.log(`getting char ${key}`)
+console.log(`this.characteristics[key]`,this.characteristics[key])
         if (this.characteristics[key]) {
             return this.characteristics[key]
         }
 
         const characteristic = PostCubeMockCharacteristic(this, serviceUUID, characteristicUUID)
+console.log('new characteristic:',characteristic)
         this.characteristics[key] = characteristic
         return characteristic
     }
