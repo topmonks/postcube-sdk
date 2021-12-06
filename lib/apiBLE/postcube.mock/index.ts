@@ -1,20 +1,12 @@
 
 import { jSignal, Listener } from 'jsignal'
-import { cloneDeep } from 'lodash'
 
-import * as protocol from '../../protocol.pb'
 import { PostCubeLogger } from '../../logger'
 import {
-    PACKET_SIZE,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
-    CHAR_BATTERY_LEVEL_UUID,
-    CHAR_CONTROL_UUID,
-    CHAR_RESULT_UUID,
-    RES_OK,
-    RES_INVALID_CMD,
 } from '../../constants/bluetooth'
 import { bleErrors } from '../../errors'
 import {
@@ -24,18 +16,32 @@ import {
     StopNotifications,
 } from '../postcube'
 import {
-    encodeResult,
-    chunkBuffer,
-    parseBufferChunk,
-    decodeChunkedPacket,
-} from '../../encoding'
+    validateCharacteristic,
+    PostCubeMockCharacteristic,
+} from './characteristic'
 
 export interface MockDeviceConfig {
     deviceId: string
     name: string
     batteryLevel?: number
+
     connectDelayMs?: number
     failOnConnect?: boolean
+
+    controlPacketDelayMs?: number
+    resultPacketDelayMs?: number
+
+    timeSyncResult?: number
+    timeSyncDelayMs?: number
+
+    unlockResult?: number
+    unlockDelayMs?: number
+
+    setKeyResult?: number
+    setKeyDelayMs?: number
+
+    factoryResetResult?: number
+    factoryResetDelayMs?: number
 }
 
 export interface PostCubeMockConfig {
@@ -55,8 +61,10 @@ export const requestPostCubeMock = async(
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
     config: PostCubeMockConfig = postCubeMockConfig,
 ): Promise<PostCube> => {
-    if (config.availableDevices.length > 0) {
-        return new PostCubeMock(config, config.availableDevices[0])
+    for (const mockDeviceConfig of config.availableDevices) {
+        if (~mockDeviceConfig.name.indexOf(namePrefix)) {
+            return new PostCubeMock(config, config.availableDevices[0])
+        }
     }
 
     await new Promise(resolve => setTimeout(resolve, 60000))
@@ -67,120 +75,49 @@ export const scanForPostCubesMock = async(
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
     config: PostCubeMockConfig = postCubeMockConfig,
 ): Promise<ScanResult> => {
-    return {
-        async stopScan() {},
-        promise: requestPostCubeMock(options.namePrefix, services, config).then(postCube => {
+    const abortSignal = new jSignal()
+    let scanTimeout
+
+    const handleDiscovery = (mockDeviceConfig: MockDeviceConfig) => {
+        try {
+            const postCube = new PostCubeMock(config, mockDeviceConfig)
+
             if (typeof options?.onDiscovery === 'function') {
                 options.onDiscovery(postCube)
             }
-        }),
-    }
-}
-
-
-
-const validateCharacteristic = (serviceUUID: string, characteristicUUID: string) => {
-    switch (serviceUUID) {
-    case SERVICE_BATTERY_UUID:
-        if (characteristicUUID === CHAR_BATTERY_LEVEL_UUID) {
-            break
-        }
-
-        throw bleErrors.unknownBLECharacteristic()
-    case SERVICE_UUID:
-        if (characteristicUUID === CHAR_CONTROL_UUID || characteristicUUID === CHAR_RESULT_UUID) {
-            break
-        }
-
-        throw bleErrors.unknownBLECharacteristic()
-    default:
-        throw bleErrors.unknownBLEService()
-    }
-}
-
-interface PostCubeMockCharacteristic {
-    readValue(): Promise<DataView>
-    writeValue(value: DataView): Promise<void>
-    listenForValueChange(onChange: Listener<DataView>): () => void
-}
-
-const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUUID: string, characteristicUUID: string) => {
-    const onCurrentValueChange: jSignal<DataView> = new jSignal<DataView>()
-
-    let commandBuffer: number[][] = []
-    let currentValue: DataView = new DataView(new Uint8Array(PACKET_SIZE).buffer)
-
-    if (serviceUUID === SERVICE_BATTERY_UUID && characteristicUUID === CHAR_BATTERY_LEVEL_UUID) {
-        const batteryLevel = postCubeMock.deviceConfig.batteryLevel || 10 + Math.round(Math.random() * 50)
-        currentValue.setUint8(0, batteryLevel)
-    }
-
-    onCurrentValueChange.listen(async() => {
-        if (serviceUUID !== SERVICE_UUID || characteristicUUID !== CHAR_CONTROL_UUID) {
-            return
-        }
-
-        const { buffer, isLast } = await parseBufferChunk(currentValue)
-        commandBuffer.push(buffer)
-
-        if (isLast) {
-            await processCommand()
-        }
-    })
-
-    const processCommand = async() => {
-        let packet: protocol.Packet
-
-        try {
-            packet = await decodeChunkedPacket(commandBuffer)
         } catch (err) {
-            throw err
-        } finally {
-            commandBuffer = []
+            // console.error(err)
+        }
+    }
+
+    const stopScan = async() => {
+        if (scanTimeout) {
+            clearTimeout(scanTimeout)
         }
 
-        let resultCode = 0
-        switch (true) {
-        case !!packet.timeSync:
-            resultCode = RES_OK
-            break
-        case !!packet.unlock:
-            resultCode = RES_OK
-            break
-        case !!packet.setKey:
-            resultCode = RES_OK
-            break
-        case !!packet.nuke:
-            resultCode = RES_OK
-            break
-        default:
-            resultCode = RES_INVALID_CMD
-            break
-        }
+        scanTimeout = null
+        abortSignal.dispatch()
+    }
 
-        const result = await encodeResult(packet.commandId, resultCode)
-        const chunks = await chunkBuffer(result)
+    const startScan = async(): Promise<void> => {
+        return new Promise(async(resolve, reject) => {
+            abortSignal.listen(resolve)
 
-        const characteristic = await postCubeMock.getCharacteristic(SERVICE_UUID, CHAR_RESULT_UUID)
-        for (const chunk of chunks) {
-            await characteristic.writeValue(chunk)
-        }
+            if (options?.timeout && options.timeout > 0) {
+                scanTimeout = setTimeout(stopScan, options.timeout)
+            }
+
+            for (const mockDeviceConfig of config.availableDevices) {
+                await new Promise(resolve => setTimeout(resolve, Math.round(500 + Math.random() * 3000)))
+
+                handleDiscovery(mockDeviceConfig)
+            }
+        })
     }
 
     return {
-        async readValue(): Promise<DataView> {
-            return currentValue
-        },
-        async writeValue(value: DataView): Promise<void> {
-            currentValue = value
-            onCurrentValueChange.dispatch(currentValue)
-        },
-        listenForValueChange(onChange: Listener<DataView>) {
-            onCurrentValueChange.listen(onChange)
-
-            return () =>
-                onCurrentValueChange.unlisten(onChange)
-        },
+        async stopScan() {},
+        promise: startScan(),
     }
 }
 
@@ -212,12 +149,14 @@ export class PostCubeMock extends PostCube {
     async getCharacteristic(serviceUUID: string, characteristicUUID: string): Promise<PostCubeMockCharacteristic> {
         await validateCharacteristic(serviceUUID, characteristicUUID)
 
-        if (this.characteristics[`${serviceUUID}_${characteristicUUID}`]) {
-            return this.characteristics[`${serviceUUID}_${characteristicUUID}`]
+        const key = `${serviceUUID}_${characteristicUUID}`
+
+        if (this.characteristics[key]) {
+            return this.characteristics[key]
         }
 
         const characteristic = PostCubeMockCharacteristic(this, serviceUUID, characteristicUUID)
-        this.characteristics[`${serviceUUID}_${characteristicUUID}`] = characteristic
+        this.characteristics[key] = characteristic
         return characteristic
     }
 
