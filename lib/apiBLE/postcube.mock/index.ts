@@ -55,16 +55,10 @@ export const requestPostCubeMock = async(
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
     config: PostCubeMockConfig = postCubeMockConfig,
 ): Promise<PostCube> => {
-    PostCubeLogger.debug({
-        config: cloneDeep(config),
-        'config.availableDevices.length': config.availableDevices.length,
-    }, 'requestPostCubeMock with config')
     if (config.availableDevices.length > 0) {
-        PostCubeLogger.debug({ config: cloneDeep(config) }, 'requestPostCubeMock - returning PostCubeMock')
         return new PostCubeMock(config, config.availableDevices[0])
     }
 
-    PostCubeLogger.debug({ config: cloneDeep(config) }, 'no PostCubeMock to return')
     await new Promise(resolve => setTimeout(resolve, 60000))
 }
 
@@ -73,16 +67,12 @@ export const scanForPostCubesMock = async(
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
     config: PostCubeMockConfig = postCubeMockConfig,
 ): Promise<ScanResult> => {
-    PostCubeLogger.debug({ config: cloneDeep(config) }, 'scanForPostCubesMock with config')
     return {
         async stopScan() {},
         promise: requestPostCubeMock(options.namePrefix, services, config).then(postCube => {
-            PostCubeLogger.debug({ postCube }, 'got requested PostCubeMock')
             if (typeof options?.onDiscovery === 'function') {
                 options.onDiscovery(postCube)
             }
-        }).catch(err => {
-            PostCubeLogger.error({ config: cloneDeep(config), err }, 'Failed to requestPostCubeMock')
         }),
     }
 }
