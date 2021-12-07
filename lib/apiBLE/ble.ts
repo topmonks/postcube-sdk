@@ -34,32 +34,33 @@ const platforms: {
     [Platform.mock]: null,
 }
 
-const platformImports: {
-    [platform in Platform]: any
-} = {
-    [Platform.web]: import('./postcube.web'),
-    [Platform.capacitor]: import('./postcube.capacitor'),
-    [Platform.node]: import('./postcube.node'),
-    [Platform.mock]: import('./postcube.mock'),
-}
-
 allPlatforms.forEach(platform => {
-    if (platformImports[platform]) {
-        platformImports[platform].then(pkg => {
-            console.log(`Imported package ${platform}: ${pkg}`)
-            platforms[platform] = pkg
-        }).catch(err => {
-            console.log(`Could not import package ${platform}: ${err}`)
-        })
-    }
+    // import(`./postcube.${platform}`).then(pkg => {
+    import(`@topmonks/postcube/apiBLE/postcube.${platform}`).then(pkg => {
+        platforms[platform] = pkg
+    }).catch(() => {})
 })
 
+// const platformImports: {
+//     [platform in Platform]: any
+// } = {
+//     [Platform.web]: import('./postcube.web'),
+//     [Platform.capacitor]: import('./postcube.capacitor'),
+//     [Platform.node]: import('./postcube.node'),
+//     [Platform.mock]: import('./postcube.mock'),
+// }
 
 // allPlatforms.forEach(platform => {
-//     import(`./postcube.${platform}`).then(pkg => {
-//         platforms[platform] = pkg
-//     }).catch(() => {})
+//     if (platformImports[platform]) {
+//         platformImports[platform].then(pkg => {
+//             console.log(`Imported package ${platform}: ${pkg}`)
+//             platforms[platform] = pkg
+//         }).catch(err => {
+//             console.log(`Could not import package ${platform}: ${err}`)
+//         })
+//     }
 // })
+
 
 export interface PostCubeBLE {
     readonly onChange: jSignal<PostCubeBLE>
