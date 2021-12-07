@@ -20,7 +20,7 @@
   "scripts": {
     "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
     "protocol:generate:typescript": "pbjs protocol.proto --ts lib/protocol.pb.ts",
-    "copy:common": "cp {.gitignore,.npmignore,protocol.proto,protocol.options} build",
+    "copy:common": "cp .gitignore .npmignore protocol.proto protocol.options build",
     "copy:browser": "sed 's/cjs\\/index\\.js/esm\\/index\\.js/; s/[[:space:]]*\"\\@abandonware\\/noble\".*//; s/[[:space:]]*\"\\@types\\/noble\".*//' package.json > build/package.json",
     "copy:node": "sed 's/\\@topmonks\\/postcube/\\@topmonks\\/postcube-node/; s/[[:space:]]*\"\\module\".*//; s/[[:space:]]*\"\\browser\".*//; s/[[:space:]]*\"\\@capacitor\\/core\".*//; s/[[:space:]]*\"\\@capacitor-community\\/bluetooth-le\".*//; s/[[:space:]]*\"\\@types\\/web-bluetooth\".*//; s/[[:space:]]*\"\\@types\\/react\".*//; s/[[:space:]]*\"react\".*//' package.json > build/package.json",
     "build:browser:esm": "tsc -p ./tsconfig.json",
