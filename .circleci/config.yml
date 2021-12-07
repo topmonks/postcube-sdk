@@ -6,7 +6,7 @@ defaults: &defaults
     - image: circleci/node:8.9.1
 
 jobs:
-  publish:
+  test:
     <<: *defaults
     steps:
       - checkout
@@ -16,20 +16,60 @@ jobs:
           name: Install dependecies
           command: npm install
       - run:
-          name: Build SDK
-          command: npm run build
+          name: Run test
+          command: npm run test
+  publish-browser:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Install dependecies
+          command: npm install
+      - run:
+          name: Build SDK (Browser)
+          command: npm run build:browser
       - run:
           name: Create .npmrc file
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
+          command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
       - run:
           name: Publish package
-          command: npm publish --access public
+          command: cd build && npm publish --access public
+  publish-node:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Install dependecies
+          command: npm install
+      - run:
+          name: Build SDK (Node.js)
+          command: npm run build:node
+      - run:
+          name: Create .npmrc file
+          command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+      - run:
+          name: Publish package
+          command: cd build && npm publish --access public
 
 workflows:
   version: 2
-  deploy:
+  publish:
     jobs:
-      - publish
+      - test
+      - approve_publish:
+          type: approval
+          requires:
+            - test
+      - publish-browser:
+          requires:
+            - approve_publish
+      - publish-node:
+          requires:
+            - publish-browser
 
 
 

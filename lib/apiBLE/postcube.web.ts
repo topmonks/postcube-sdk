@@ -16,14 +16,14 @@ import {
     StopNotifications,
 } from './postcube'
 
-export const isEnabledWeb = async(): Promise<boolean> => {
+export const isEnabled = async(): Promise<boolean> => {
     return (
         typeof navigator?.bluetooth?.getAvailability === 'function'
         && await navigator.bluetooth.getAvailability()
     )
 }
 
-export const requestPostCubeWeb = async(
+export const requestPostCube = async(
     namePrefix: string,
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
 ): Promise<PostCube> => {
@@ -39,13 +39,13 @@ export const requestPostCubeWeb = async(
     return new PostCubeWeb(device)
 }
 
-export const scanForPostCubesWeb = async(
+export const scanForPostCubes = async(
     options: ScanOptions = {},
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
 ): Promise<ScanResult> => {
     return {
         async stopScan() {},
-        promise: requestPostCubeWeb(options.namePrefix, services).then(postCube => {
+        promise: requestPostCube(options.namePrefix, services).then(postCube => {
             if (typeof options?.onDiscovery === 'function') {
                 options.onDiscovery(postCube)
             }

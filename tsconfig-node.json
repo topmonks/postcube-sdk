@@ -2,21 +2,20 @@
     "compilerOptions": {
         "rootDir": "./lib",
         "moduleResolution": "node",
-        "module": "esnext",
-        "target": "esnext",
+        "module": "commonjs",
+        "target": "es2015",
         "declaration": true,
-        "outDir": "./build/esm",
+        "outDir": "./build/cjs",
         "allowJs": true,
         "strict": false,
         "lib": [
-            "dom",
-            "dom.iterable",
             "es2015.promise",
             "esnext"
         ]
     },
     "exclude": [
-        "**/*.node.*"
+        "**/*.web.*",
+        "**/*.capacitor.*"
     ],
     "include": [
         "lib/**/*"

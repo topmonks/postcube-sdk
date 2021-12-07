@@ -1,6 +1,6 @@
 {
   "name": "@topmonks/postcube",
-  "version": "2.0.18",
+  "version": "2.0.19",
   "description": "PostCube public SDK",
   "author": "TopMonks <info@topmonks.com>",
   "license": "EPL-2.0",
@@ -14,18 +14,30 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "index.js",
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "browser": "umd/index.js",
   "scripts": {
     "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
     "protocol:generate:typescript": "pbjs protocol.proto --ts lib/protocol.pb.ts",
-    "build": "npm run protocol:generate:typescript && tsc",
+    "copy:common": "cp {.gitignore,.npmignore,protocol.proto,protocol.options} build",
+    "copy:browser": "sed 's/cjs\\/index\\.js/esm\\/index\\.js/; s/[[:space:]]*\"\\@abandonware\\/noble\".*//; s/[[:space:]]*\"\\@types\\/noble\".*//' package.json > build/package.json",
+    "copy:node": "sed 's/\\@topmonks\\/postcube/\\@topmonks\\/postcube-node/; s/[[:space:]]*\"\\module\".*//; s/[[:space:]]*\"\\browser\".*//; s/[[:space:]]*\"\\@capacitor\\/core\".*//; s/[[:space:]]*\"\\@capacitor-community\\/bluetooth-le\".*//; s/[[:space:]]*\"\\@types\\/web-bluetooth\".*//; s/[[:space:]]*\"\\@types\\/react\".*//; s/[[:space:]]*\"react\".*//' package.json > build/package.json",
+    "build:browser:esm": "tsc -p ./tsconfig.json",
+    "build:browser:umd": "tsc -p ./tsconfig-umd.json",
+    "prebuild:browser": "rimraf build && npm run protocol:generate:typescript",
+    "build:browser": "npm run build:browser:esm && npm run build:browser:umd",
+    "postbuild:browser": "npm run copy:common && npm run copy:browser && cd build && npm install",
+    "prebuild:node": "rimraf build && npm run protocol:generate:typescript",
+    "build:node": "tsc -p ./tsconfig-node.json",
+    "postbuild:node": "npm run copy:common && npm run copy:node && cd build && npm install",
+    "test": "echo \"Nothing to see here...\"",
     "watch": "npm run protocol:generate:typescript && tsc --watch"
   },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-15",
     "@capacitor-community/bluetooth-le": "^1.6.0",
     "@capacitor/core": "^3.3.2",
-    "cordova-plugin-ble-central": "^1.4.0",
     "elliptic": "^6.5.4",
     "events": "^3.3.0",
     "javascript-state-machine": "^3.1.0",
@@ -33,8 +45,7 @@
     "jsignal": "^2.5.0",
     "lodash": "^4.17.21",
     "node-fetch": "^3.1.0",
-    "pbjs": "0.0.14",
-    "uninstall": "0.0.0"
+    "pbjs": "0.0.14"
   },
   "devDependencies": {
     "@types/elliptic": "^6.4.14",
@@ -44,6 +55,7 @@
     "@types/react": "^17.0.36",
     "@types/web-bluetooth": "0.0.11",
     "react": "^17.0.2",
+    "rimraf": "^3.0.2",
     "typescript": "^4.5.2"
   },
   "peerDependencies": {

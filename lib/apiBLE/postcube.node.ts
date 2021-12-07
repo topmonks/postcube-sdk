@@ -17,18 +17,18 @@ import {
     StopNotifications,
 } from './postcube'
 
-export const isEnabledNode = async(): Promise<boolean> => {
+export const isEnabled = async(): Promise<boolean> => {
     return true
 }
 
-export const requestPostCubeNode = async(
+export const requestPostCube = async(
     namePrefix: string,
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
 ): Promise<PostCube> => {
     throw bleErrors.notSupported(`requestPostCube is not supported on platform 'Node.js'`)
 }
 
-export const scanForPostCubesNode = async(
+export const scanForPostCubes = async(
     options: ScanOptions = {},
     services: string[] = [],
 ): Promise<ScanResult> => {

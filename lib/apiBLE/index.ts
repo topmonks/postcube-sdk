@@ -9,8 +9,8 @@ export type {
     MockDeviceConfig,
 } from './postcube.mock'
 export {
-    requestPostCubeMock,
-    scanForPostCubesMock,
+    requestPostCube as requestPostCubeMock,
+    scanForPostCubes as scanForPostCubesMock,
     postCubeMockConfig,
 } from './postcube.mock'
 

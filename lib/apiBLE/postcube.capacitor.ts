@@ -20,11 +20,11 @@ import {
     StopNotifications,
 } from './postcube'
 
-export const isEnabledCapacitor = async(): Promise<boolean> => {
+export const isEnabled = async(): Promise<boolean> => {
     return await BleClient.isEnabled()
 }
 
-export const requestPostCubeCapacitor = async(
+export const requestPostCube = async(
     namePrefix: string,
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
 ): Promise<PostCube> => {
@@ -38,7 +38,7 @@ export const requestPostCubeCapacitor = async(
     return new PostCubeCapacitor(device)
 }
 
-export const scanForPostCubesCapacitor = async(
+export const scanForPostCubes = async(
     options: ScanOptions = {},
     services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
 ): Promise<ScanResult> => {

@@ -9,22 +9,36 @@ import {
     ScanOptions,
     ScanResult,
 } from './postcube'
-import {
-    isEnabledWeb,
-    requestPostCubeWeb,
-    scanForPostCubesWeb,
-} from './postcube.web'
-import {
-    isEnabledCapacitor,
-    requestPostCubeCapacitor,
-    scanForPostCubesCapacitor,
-} from './postcube.capacitor'
+import type { PostCubeMockConfig } from './postcube.mock'
 
 export enum Platform {
     web       = 'web',
     capacitor = 'capacitor',
     node      = 'node',
+    mock      = 'mock',
 }
+
+const allPlatforms = [
+    Platform.web,
+    Platform.capacitor,
+    Platform.node,
+    Platform.mock,
+]
+
+const platforms: {
+    [platform in Platform]: any
+} = {
+    [Platform.web]: null,
+    [Platform.capacitor]: null,
+    [Platform.node]: null,
+    [Platform.mock]: null,
+}
+
+allPlatforms.forEach(platform => {
+    import(`./postcube.${platform}`).then(pkg => {
+        platforms[platform] = pkg
+    }).catch(() => {})
+})
 
 export interface PostCubeBLE {
     readonly onChange: jSignal<PostCubeBLE>
@@ -38,37 +52,25 @@ export interface PostCubeBLE {
 }
 
 const isEnabled = async(): Promise<boolean> => {
-    switch (PostCubeBLE.platform) {
-    case Platform.web:
-        return isEnabledWeb()
-    case Platform.capacitor:
-        return isEnabledCapacitor()
-    case Platform.node:
-        const { isEnabledNode } = await import('./postcube.node')
-        return isEnabledNode()
+    if (!platforms[PostCubeBLE.platform]) {
+        throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
-    throw bleErrors.invalidPlatform()
+    return platforms[PostCubeBLE.platform].isEnabled()
 }
 
-const requestPostCube = async(namePrefix: string): Promise<PostCube> => {
+const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfig): Promise<PostCube> => {
     PostCubeLogger.debug({ platform: PostCubeBLE.platform }, 'Requesting PostCube')
 
-    let postCube: PostCube
-    switch (PostCubeBLE.platform) {
-    case Platform.web:
-        postCube = await requestPostCubeWeb(namePrefix, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-        break
-    case Platform.capacitor:
-        postCube = await requestPostCubeCapacitor(namePrefix, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-        break
-    case Platform.node:
-        const { requestPostCubeNode } = await import('./postcube.node')
-        postCube = await requestPostCubeNode(namePrefix, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-        break
-    default:
-        throw bleErrors.invalidPlatform()
+    if (!platforms[PostCubeBLE.platform]) {
+        throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
+
+    const postCube: PostCube = await platforms[PostCubeBLE.platform].requestPostCube(
+        namePrefix,
+        [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+        mockConfig,
+    )
 
     PostCubeLogger.debug({
         platform: PostCubeBLE.platform,
@@ -78,7 +80,11 @@ const requestPostCube = async(namePrefix: string): Promise<PostCube> => {
     return postCube
 }
 
-const scanForPostCubes = async(options: ScanOptions = {}): Promise<ScanResult> => {
+const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeMockConfig): Promise<ScanResult> => {
+    if (!platforms[PostCubeBLE.platform]) {
+        throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
+    }
+
     PostCubeBLE.onChange.dispatch(PostCubeBLE)
 
     const _options: ScanOptions = {
@@ -97,25 +103,25 @@ const scanForPostCubes = async(options: ScanOptions = {}): Promise<ScanResult> =
         options: _options,
     }, 'Scanning for PostCube with options')
 
-    switch (PostCubeBLE.platform) {
-    case Platform.web:
-        return scanForPostCubesWeb(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-    case Platform.capacitor:
-        return scanForPostCubesCapacitor(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-    case Platform.node:
-        const { scanForPostCubesNode } = await import('./postcube.node')
-        return scanForPostCubesNode(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ])
-    }
-
-    throw bleErrors.invalidPlatform()
+    return platforms[PostCubeBLE.platform].scanForPostCubes(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ], mockConfig)
 }
 
-let platform: Platform = Platform.web
+let platform: Platform
 
 export const PostCubeBLE: PostCubeBLE = {
     onChange: new jSignal<PostCubeBLE>(),
     onCubeDiscovered: new jSignal<PostCube>(),
-    get platform(): Platform { return platform },
+    get platform(): Platform {
+        if (!platform) {
+            const keys = Object.keys(platforms)
+
+            if (keys.length > 0) {
+                platform = keys[0] as Platform
+            }
+        }
+
+        return platform
+    },
     set platform(value: Platform) {
         if (!~Object.keys(Platform).indexOf(value)) {
             throw bleErrors.invalidPlatform(`Invalid platform '${value}'`)

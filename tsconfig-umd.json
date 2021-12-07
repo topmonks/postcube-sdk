@@ -2,10 +2,10 @@
     "compilerOptions": {
         "rootDir": "./lib",
         "moduleResolution": "node",
-        "module": "esnext",
-        "target": "esnext",
+        "module": "umd",
+        "target": "es2015",
         "declaration": true,
-        "outDir": "./build/esm",
+        "outDir": "./build/umd",
         "allowJs": true,
         "strict": false,
         "lib": [
