@@ -31,6 +31,12 @@ jobs:
           name: Build SDK (Browser)
           command: npm run build:browser
       - run:
+          name: Emptify postcube.node.js ESM
+          command: cat /dev/null > build/esm/apiBLE/postcube.node.js
+      - run:
+          name: Emptify postcube.node.js UMD
+          command: cat /dev/null > build/umd/apiBLE/postcube.node.js
+      - run:
           name: Create .npmrc file
           command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
       - run:
@@ -48,6 +54,9 @@ jobs:
       - run:
           name: Build SDK (Node.js)
           command: npm run build:node
+      - run:
+          name: Emptify postcube.web.js and postcube.capacitor.js CJS
+          command: cat /dev/null > build/cjs/apiBLE/postcube.web.js && cat /dev/null > build/cjs/apiBLE/postcube.capacitor.js
       - run:
           name: Create .npmrc file
           command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc

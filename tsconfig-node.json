@@ -13,10 +13,6 @@
             "esnext"
         ]
     },
-    "exclude": [
-        "**/*.web.*",
-        "**/*.capacitor.*"
-    ],
     "include": [
         "lib/**/*"
     ]
