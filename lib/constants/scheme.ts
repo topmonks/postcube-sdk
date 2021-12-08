@@ -4,7 +4,7 @@ const joi = (Joi as any)?.default ?
     (Joi as any).default : Joi
 
 import {
-    TRANSITION_NAME,
+    DELIVERY_TRANSITION_NAME,
 } from './delivery'
 
 export const SenderValidationSchema = joi.object({
@@ -44,7 +44,7 @@ export const CreateSchema = joi.object({
 })
 
 export const TransitionValidationSchema = {
-    [TRANSITION_NAME.UPDATE_FORM]: joi.object({
+    [DELIVERY_TRANSITION_NAME.UPDATE_FORM]: joi.object({
         meta: SenderValidationSchema,
         update: joi.object({
             sender:            DeliveryPointSchema,
@@ -56,27 +56,27 @@ export const TransitionValidationSchema = {
             newCard:           joi.any(),
         }),
     }),
-    [TRANSITION_NAME.PACKAGE_TAGGED]: joi.object({
+    [DELIVERY_TRANSITION_NAME.PACKAGE_TAGGED]: joi.object({
         meta: SenderValidationSchema,
         update: joi.allow(null),
     }),
-    [TRANSITION_NAME.DELETED_BY_RECIPIENT_WITHOUT_REFUND]: joi.object({
+    [DELIVERY_TRANSITION_NAME.DELETED_BY_RECIPIENT_WITHOUT_REFUND]: joi.object({
         meta: SenderValidationSchema,
         update: joi.allow(null),
     }),
-    [TRANSITION_NAME.SENDER_OPENS_BOX]: joi.object({
+    [DELIVERY_TRANSITION_NAME.SENDER_OPENS_BOX]: joi.object({
         meta: SenderValidationSchema,
         update: joi.allow(null),
     }),
-    [TRANSITION_NAME.SENDER_CONFIRMS_DELIVERY]: joi.object({
+    [DELIVERY_TRANSITION_NAME.SENDER_CONFIRMS_DELIVERY]: joi.object({
         meta: SenderValidationSchema,
         update: joi.allow(null),
     }),
-    [TRANSITION_NAME.RECIPIENT_OPENS_BOX]: joi.object({
+    [DELIVERY_TRANSITION_NAME.RECIPIENT_OPENS_BOX]: joi.object({
         meta: RecipientValidationSchema,
         update: joi.allow(null),
     }),
-    [TRANSITION_NAME.RECIPIENT_CONFIRMS_DELIVERY]: joi.object({
+    [DELIVERY_TRANSITION_NAME.RECIPIENT_CONFIRMS_DELIVERY]: joi.object({
         meta: RecipientValidationSchema,
         update: joi.allow(null),
     }),

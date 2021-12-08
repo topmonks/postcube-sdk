@@ -54,11 +54,11 @@ export {
     APP_TYPE,
 } from './constants/organisation'
 export {
-    POINT_TYPES,
-    DIRECTION,
-    STATE_NAMES,
-    TRANSITION_NAME,
-    STATE_VISIBILITY,
+    DELIVERY_POINT_TYPES,
+    DELIVERY_DIRECTION,
+    DELIVERY_STATE_NAMES,
+    DELIVERY_TRANSITION_NAME,
+    DELIVERY_STATE_VISIBILITY,
 } from './constants/delivery'
 export {
     BOX_STATES,
