@@ -26,10 +26,10 @@ import * as postcubeNode from './postcube.node'
 const platforms: {
     [platform in Platform]: any
 } = {
-    [Platform.web]: postcubeMock,
-    [Platform.capacitor]: postcubeWeb,
-    [Platform.node]: postcubeCapacitor,
-    [Platform.mock]: postcubeNode,
+    [Platform.web]: postcubeWeb,
+    [Platform.capacitor]: postcubeCapacitor,
+    [Platform.node]: postcubeNode,
+    [Platform.mock]: postcubeMock,
 }
 
 export interface PostCubeBLE {
@@ -44,7 +44,7 @@ export interface PostCubeBLE {
 }
 
 const isEnabled = async(): Promise<boolean> => {
-    if (!platforms[PostCubeBLE.platform]) {
+    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].isEnabled !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
@@ -54,7 +54,7 @@ const isEnabled = async(): Promise<boolean> => {
 const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfig): Promise<PostCube> => {
     PostCubeLogger.debug({ platform: PostCubeBLE.platform }, 'Requesting PostCube')
 
-    if (!platforms[PostCubeBLE.platform]) {
+    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].requestPostCube !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
@@ -73,7 +73,7 @@ const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfi
 }
 
 const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeMockConfig): Promise<ScanResult> => {
-    if (!platforms[PostCubeBLE.platform]) {
+    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].scanForPostCubes !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
