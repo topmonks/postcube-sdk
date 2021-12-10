@@ -10,7 +10,7 @@ export {
     getFuture,
     getFutureEpoch,
     parseSecretCode,
-    parseBoxName,
+    parsePostCubeName,
 } from './helpers'
 export { PostCubeLogger } from './logger'
 

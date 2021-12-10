@@ -34,9 +34,10 @@ export const parseSecretCode = (secretCode: string|Iterable<number>): number[] =
     return chunk(secretCode, 2).map(byte => parseInt(byte.join(''), 16))
 }
 
-export const parseBoxName = (name: string): {
+export const parsePostCubeName = (name: string): {
     prefix: string
     id: string
+    isDev: boolean
     isMultibox: boolean
 } => {
     const nameParts = String(name).split(' ')
@@ -49,7 +50,10 @@ export const parseBoxName = (name: string): {
         throw bleErrors.invalidName('Invalid prefix')
     }
 
-    if (!/^\d{6}$/.test(nameParts[1])) {
+    let isDev = false
+    if (nameParts[1].toLowerCase().trim() === 'devkit') {
+        isDev = true
+    } else if (!/^\d{6}$/.test(nameParts[1])) {
         throw bleErrors.invalidName('Invalid PostCube ID')
     }
 
@@ -63,6 +67,7 @@ export const parseBoxName = (name: string): {
             nameParts[0] : null,
         id: nameParts[1] ?
             nameParts[1] : null,
+        isDev,
         isMultibox,
     }
 }

@@ -12,7 +12,7 @@ import {
     RESPONSE_MESSAGES,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
-import { parseBoxName } from '../helpers'
+import { parsePostCubeName } from '../helpers'
 import {
     encodeCommand,
     chunkBuffer,
@@ -44,6 +44,7 @@ export abstract class PostCube extends EventEmitter {
 
     readonly id: string
     readonly name: string
+    readonly isDev: boolean
     readonly isMultibox: boolean
 
     abstract readonly deviceId: string
@@ -52,10 +53,11 @@ export abstract class PostCube extends EventEmitter {
     constructor(name: string) {
         super()
 
-        const { id, isMultibox } = parseBoxName(name)
+        const { id, isDev, isMultibox } = parsePostCubeName(name)
 
         this.id = id
         this.name = name
+        this.isDev = isDev
         this.isMultibox = isMultibox
     }
 
