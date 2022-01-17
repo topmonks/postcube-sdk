@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from 'react'
-
 import { PostCubeBLE, PostCube } from './apiBLE'
 
 export const usePostCubeBLE = (
     onCubeDiscovery?: (postCube: PostCube) => any,
 ): PostCubeBLE => {
-    const [ toggle, setToggle ] = useState<boolean>(false)
+    const { useState, useEffect } = require('react')
+
+    const [ toggle, setToggle ] = useState(false)
 
     const handlePostCubeBLEChange = () => {
         setToggle(!toggle)
@@ -32,7 +32,9 @@ export const usePostCubeBLE = (
 }
 
 export const usePostCube = (postCube?: PostCube): PostCube => {
-    const [ toggle, setToggle ] = useState<boolean>(false)
+    const { useState, useEffect } = require('react')
+
+    const [ toggle, setToggle ] = useState(false)
     const [ _postCube, setPostCube ] = useState(postCube)
 
     const handlePostCubeChange = () => {
