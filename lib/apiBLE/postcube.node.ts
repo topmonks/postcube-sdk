@@ -1,6 +1,6 @@
 
 import { Listener } from 'jsignal'
-import * as noble from '@abandonware/noble'
+import type * as noble from '@abandonware/noble'
 
 import { PostCubeLogger } from '../logger'
 import {
@@ -16,6 +16,21 @@ import {
     ScanResult,
     StopNotifications,
 } from './postcube'
+
+let nobleInstance
+const getNobleInstance = async() => {
+    if (['1', 'true', 't', 'yes', 'y'].indexOf(String(process.env['POSTCUBE_ENABLE_NOBLE']).toLowerCase()) < 0) {
+        throw bleErrors.notSupported(
+            `SDK dependency '@abandonware/noble' is disabled by default; add 'POSTCUBE_ENABLE_NOBLE=true' as your ENV variable to manually confirm that your machine supports bluetooth and enable dependency`,
+        )
+    }
+
+    if (!nobleInstance) {
+        nobleInstance = require('@abandonware/noble')
+    }
+
+    return nobleInstance
+}
 
 export const isEnabled = async(): Promise<boolean> => {
     return true
@@ -36,6 +51,8 @@ export const scanForPostCubes = async(
     let scanTimeout
 
     const stopScan = async() => {
+        const noble = await getNobleInstance()
+
         if (scanTimeout) {
             clearTimeout(scanTimeout)
         }
@@ -59,6 +76,8 @@ export const scanForPostCubes = async(
     }
 
     const startScan = async() => {
+        const noble = await getNobleInstance()
+
         if (options?.timeout && options.timeout > 0) {
             scanTimeout = setTimeout(stopScan, options.timeout)
         }

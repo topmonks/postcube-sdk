@@ -45,7 +45,6 @@ export abstract class PostCube extends EventEmitter {
     readonly id: string
     readonly name: string
     readonly isDev: boolean
-    readonly isMultibox: boolean
 
     abstract readonly deviceId: string
     abstract readonly isConnected: boolean
@@ -53,12 +52,11 @@ export abstract class PostCube extends EventEmitter {
     constructor(name: string) {
         super()
 
-        const { id, isDev, isMultibox } = parsePostCubeName(name)
+        const { id, isDev } = parsePostCubeName(name)
 
         this.id = id
         this.name = name
         this.isDev = isDev
-        this.isMultibox = isMultibox
     }
 
     private async checkEncryptionKeys() {

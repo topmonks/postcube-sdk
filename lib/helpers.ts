@@ -38,7 +38,6 @@ export const parsePostCubeName = (name: string): {
     prefix: string
     id: string
     isDev: boolean
-    isMultibox: boolean
 } => {
     const nameParts = String(name).split(' ')
 
@@ -57,17 +56,11 @@ export const parsePostCubeName = (name: string): {
         throw bleErrors.invalidName('Invalid PostCube ID')
     }
 
-    let isMultibox = false
-    if (nameParts[2] && ~nameParts[2].toLowerCase().indexOf('multibox')) {
-        isMultibox = true
-    }
-
     return {
         prefix: nameParts[0] ?
             nameParts[0] : null,
         id: nameParts[1] ?
             nameParts[1] : null,
         isDev,
-        isMultibox,
     }
 }

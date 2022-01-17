@@ -23,7 +23,7 @@ import * as postcubeWeb from './postcube.web'
 import * as postcubeCapacitor from './postcube.capacitor'
 import * as postcubeNode from './postcube.node'
 
-const platforms: {
+const platformMap: {
     [platform in Platform]: any
 } = {
     [Platform.web]: postcubeWeb,
@@ -44,21 +44,21 @@ export interface PostCubeBLE {
 }
 
 const isEnabled = async(): Promise<boolean> => {
-    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].isEnabled !== 'function') {
+    if (!platformMap[PostCubeBLE.platform] || typeof platformMap[PostCubeBLE.platform].isEnabled !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
-    return platforms[PostCubeBLE.platform].isEnabled()
+    return platformMap[PostCubeBLE.platform].isEnabled()
 }
 
 const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfig): Promise<PostCube> => {
     PostCubeLogger.debug({ platform: PostCubeBLE.platform }, 'Requesting PostCube')
 
-    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].requestPostCube !== 'function') {
+    if (!platformMap[PostCubeBLE.platform] || typeof platformMap[PostCubeBLE.platform].requestPostCube !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
-    const postCube: PostCube = await platforms[PostCubeBLE.platform].requestPostCube(
+    const postCube: PostCube = await platformMap[PostCubeBLE.platform].requestPostCube(
         namePrefix,
         [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
         mockConfig,
@@ -73,7 +73,7 @@ const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfi
 }
 
 const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeMockConfig): Promise<ScanResult> => {
-    if (!platforms[PostCubeBLE.platform] || typeof platforms[PostCubeBLE.platform].scanForPostCubes !== 'function') {
+    if (!platformMap[PostCubeBLE.platform] || typeof platformMap[PostCubeBLE.platform].scanForPostCubes !== 'function') {
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
@@ -95,7 +95,7 @@ const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeM
         options: _options,
     }, 'Scanning for PostCube with options')
 
-    return platforms[PostCubeBLE.platform].scanForPostCubes(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ], mockConfig)
+    return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ], mockConfig)
 }
 
 let platform: Platform
@@ -105,7 +105,7 @@ export const PostCubeBLE: PostCubeBLE = {
     onCubeDiscovered: new jSignal<PostCube>(),
     get platform(): Platform {
         if (!platform) {
-            const keys = Object.keys(platforms)
+            const keys = Object.keys(platformMap)
 
             if (keys.length > 0) {
                 platform = keys[0] as Platform
