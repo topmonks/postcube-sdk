@@ -34,6 +34,26 @@ const deriveEncryptionKey = async(keys: EncryptionKeys): Promise<Uint8Array> => 
     return await hash(sharedKey.toArray())
 }
 
+export enum CommandType {
+    setKey   = 'setKey',
+    unlock   = 'unlock',
+    timeSync = 'timeSync',
+    nuke     = 'nuke',
+    protect  = 'protect',
+}
+
+export interface CommandMap {
+    [CommandType.setKey]:   protocol.SetKey
+    [CommandType.unlock]:   protocol.Unlock
+    [CommandType.timeSync]: protocol.TimeSync
+    [CommandType.nuke]:     protocol.Nuke
+    [CommandType.protect]:  protocol.Protect
+}
+
+export type Command = {
+    [K in keyof CommandMap]-?: Required<Pick<CommandMap, K>> & Partial<Pick<CommandMap, Exclude<keyof CommandMap, K>>>;
+}[keyof CommandMap]
+
 export interface EncryptionKeys {
     keyIndex?: number
     privateKey?: Uint8Array|number[]
@@ -45,24 +65,49 @@ export interface EncodingOptions {
     keys?: EncryptionKeys
 }
 
-export const encodeCommand = async(command: Partial<protocol.Packet>, options: EncodingOptions = {}): Promise<Uint8Array> => {
+const detectAndEncodeCommand = (command: Command): Uint8Array => {
+    const commandProperties = Object.getOwnPropertyNames(command)
+
+    switch (false) {
+    case !~commandProperties.indexOf(CommandType.setKey):
+        return protocol.encodeSetKey(command[CommandType.setKey])
+    case !~commandProperties.indexOf(CommandType.unlock):
+        return protocol.encodeUnlock(command[CommandType.unlock])
+    case !~commandProperties.indexOf(CommandType.timeSync):
+        return protocol.encodeTimeSync(command[CommandType.timeSync])
+    case !~commandProperties.indexOf(CommandType.nuke):
+        return protocol.encodeNuke(command[CommandType.nuke])
+    case !~commandProperties.indexOf(CommandType.protect):
+        return protocol.encodeProtect(command[CommandType.protect])
+    }
+
+    throw bleErrors.invalidCommand()
+}
+
+export const encodeCommand = async(command: Command, options: EncodingOptions = {}): Promise<Uint8Array> => {
     const commandId = await generateCommandId(options)
     const expireAt = getFutureEpoch(24)
 
-    let encodedPacket: Uint8Array = protocol.encodePacket({ ...command, commandId, expireAt })
+    let encodedCommand = detectAndEncodeCommand(command)
+
+    let encodedPacket: Uint8Array = protocol.encodePacket({
+        ...command,
+        commandId,
+        expireAt,
+    })
 
     if (options.secretCode) {
         const hashedSecret = await hash(parseSecretCode(options.secretCode))
 
         encodedPacket = protocol.encodeEncryptedPacket({
             hashedSecret,
-            payload: encodedPacket,
+            payload: encodedCommand,
         })
     }
 
     if (options.keys) {
         const encryptionKey = await deriveEncryptionKey(options.keys)
-        const encryptedPayload: Uint8Array = chacha20.encrypt(encryptionKey, NONCE, encodedPacket)
+        const encryptedPayload: Uint8Array = chacha20.encrypt(encryptionKey, NONCE, encodedCommand)
 
         encodedPacket = protocol.encodeEncryptedPacket({
             encryptionKeyId: options.keys.keyIndex,
@@ -70,7 +115,14 @@ export const encodeCommand = async(command: Partial<protocol.Packet>, options: E
         })
     }
 
-    return encodedPacket
+    if (encodedPacket.length > 254) {
+        throw bleErrors.invalidCommandTooLarge()
+    }
+
+    return new Uint8Array(Buffer.from([
+        encodedPacket.length,
+        ...encodedPacket,
+    ]))
 }
 
 export const encodeResult = async(commandId: number, value?: number, errorCode?: number): Promise<Uint8Array> => {

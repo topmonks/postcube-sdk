@@ -57,4 +57,7 @@ export const bleErrors = {
 
     invalidCommand: (message: string = 'Invalid PostCube BLE command') =>
         new BleError(BleErrorCode.invalidCommand, message),
+
+    invalidCommandTooLarge: (message: string = 'BLE command is larger then 255 bytes') =>
+        new BleError(BleErrorCode.invalidCommandTooLarge, message),
 }

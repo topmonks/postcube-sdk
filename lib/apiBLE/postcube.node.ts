@@ -21,7 +21,7 @@ let nobleInstance
 const getNobleInstance = async() => {
     if (['1', 'true', 't', 'yes', 'y'].indexOf(String(process.env['POSTCUBE_ENABLE_NOBLE']).toLowerCase()) < 0) {
         throw bleErrors.notSupported(
-            `SDK dependency '@abandonware/noble' is disabled by default; add 'POSTCUBE_ENABLE_NOBLE=true' as your ENV variable to manually confirm that your machine supports bluetooth and enable dependency`,
+            `SDK dependency '@abandonware/noble' is disabled by default; add 'POSTCUBE_ENABLE_NOBLE=true' as your ENV variable to manually enable dependency and confirm that your machine supports bluetooth`,
         )
     }
 

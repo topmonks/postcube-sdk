@@ -18,4 +18,5 @@ export enum BleErrorCode {
     invalidSecretCode        = 'invalid_secret_code',
     invalidKeys              = 'invalid_keys',
     invalidCommand           = 'invalid_command',
+    invalidCommandTooLarge   = 'invalid_command_too_large',
 }
