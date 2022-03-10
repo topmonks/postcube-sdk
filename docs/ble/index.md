@@ -1,7 +1,6 @@
 ---
-layout: default
-slug: bluetooth-api
 title: BLE API Docs
+slug: bluetooth-api
 isSubmenu: true
 ---
 

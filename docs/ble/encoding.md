@@ -1,7 +1,6 @@
 ---
-layout: default
-slug: command-encoding
 title: BLE Command Encoding
+slug: command-encoding
 submenu: bluetooth-api
 isMenuItem: true
 ---
