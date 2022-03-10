@@ -145,9 +145,7 @@ export abstract class PostCube extends EventEmitter {
         PostCubeLogger.debug({ timestamp }, `writeSyncTime to PostCube (ID: ${this.id})`)
 
         const command = await encodeCommand({
-            timeSync: {
-                timestamp,
-            },
+            timeSync: { timestamp },
         }, { keys: PostCube.EncryptionKeys[this.id] })
 
         const result = await this.writeCommandAndReadResult(command)
@@ -233,13 +231,23 @@ export abstract class PostCube extends EventEmitter {
     abstract connect(timeoutMs?: number): Promise<void>
     abstract disconnect(timeoutMs?: number): Promise<void>
 
-    abstract read(serviceUUID: string, characteristicUUID: string): Promise<DataView>
-    abstract write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void>
+    abstract read(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs?: number,
+    ): Promise<DataView>
+    abstract write(
+        serviceUUID: string,
+        characteristicUUID: string,
+        value: DataView,
+        timeoutMs?: number,
+    ): Promise<void>
 
     abstract listenForNotifications(
         serviceUUID: string,
         characteristicUUID: string,
         listener: Listener<DataView>,
+        timeoutMs?: number,
     ): Promise<StopNotifications>
 }
 

@@ -2,13 +2,15 @@
     "compilerOptions": {
         "rootDir": "./lib",
         "moduleResolution": "node",
-        "module": "commonjs",
-        "target": "es2015",
+        "module": "esnext",
+        "target": "esnext",
         "declaration": true,
-        "outDir": "./build/cjs",
+        "outDir": "./build/esm",
         "allowJs": true,
         "strict": false,
         "lib": [
+            "dom",
+            "dom.iterable",
             "es2015.promise",
             "esnext"
         ]

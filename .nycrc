@@ -1,0 +1,22 @@
+{
+    "check-coverage": true,
+    "branches": 1,
+    "lines": 1,
+    "functions": 1,
+    "statements": 1,
+    "include": [
+        "lib/**/*.ts"
+    ],
+    "exclude": [
+      "test/**/*.*"
+    ],
+    "all": true,
+    "extension": [
+        ".ts"
+    ],
+    "reporter": [
+        "lcov",
+        "text-summary",
+        "clover"
+    ]
+}

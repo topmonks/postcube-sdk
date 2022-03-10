@@ -6,6 +6,8 @@ import { PostCubeLogger } from '../logger'
 import {
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
+    DEFAULT_TIMEOUT_IO,
+    DEFAULT_TIMEOUT_LISTEN,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
 } from '../constants/bluetooth'
@@ -137,49 +139,145 @@ export class PostCubeNode extends PostCube {
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
         PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
 
+        let timeout, isConnected = false
+        if (timeoutMs) {
+            timeout = setTimeout(() => {
+                if (isConnected) {
+                    return
+                }
+
+                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+            }, timeoutMs)
+        }
+
         await this.peripheral.connectAsync()
+
+        isConnected = true
+        if (timeout) {
+            clearTimeout(timeout)
+            timeout = null
+        }
+
         this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
         PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@abandonware/noble]`)
 
+        let timeout, isDisconnected = false
+        if (timeoutMs) {
+            timeout = setTimeout(() => {
+                if (isDisconnected) {
+                    return
+                }
+
+                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+            }, timeoutMs)
+        }
+
         await this.peripheral.disconnectAsync()
+
+        isDisconnected = true
+        if (timeout) {
+            clearTimeout(timeout)
+            timeout = null
+        }
+
         this.emit('change', this)
     }
 
-    async read(serviceUUID: string, characteristicUUID: string): Promise<DataView> {
+    async read(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs: number = DEFAULT_TIMEOUT_IO,
+    ): Promise<DataView> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Reading value from PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
 
+        let timeout, isDone = false
+        if (timeoutMs) {
+            timeout = setTimeout(() => {
+                if (isDone) {
+                    return
+                }
+
+                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [@abandonware/noble]`)
+            }, timeoutMs)
+        }
+
         const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
         const buffer = await characteristic.readAsync()
+
+        isDone = true
+        if (timeout) {
+            clearTimeout(timeout)
+            timeout = null
+        }
 
         return new DataView(buffer)
     }
 
-    async write(serviceUUID: string, characteristicUUID: string, value: DataView): Promise<void> {
+    async write(
+        serviceUUID: string,
+        characteristicUUID: string,
+        value: DataView,
+        timeoutMs: number = DEFAULT_TIMEOUT_IO,
+    ): Promise<void> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID, value },
             `Writing value to PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
 
+        let timeout, isDone = false
+        if (timeoutMs) {
+            timeout = setTimeout(() => {
+                if (isDone) {
+                    return
+                }
+
+                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+            }, timeoutMs)
+        }
+
         const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
 
         const buffer = Buffer.from(value.buffer)
         await characteristic.writeAsync(buffer, true)
+
+        isDone = true
+        if (timeout) {
+            clearTimeout(timeout)
+            timeout = null
+        }
     }
 
-    async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>): Promise<StopNotifications> {
+    async listenForNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+        timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
+    ): Promise<StopNotifications> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
         )
 
+        let timeout, isListening = true
+        if (timeoutMs) {
+            timeout = setTimeout(() => {
+                if (!isListening) {
+                    return
+                }
+
+                stopListening()
+                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`)
+            }, timeoutMs)
+        }
+
         const handleCharacteristicValueChanged = event => {
-            if (typeof listener === 'function') {
+            if (isListening && typeof listener === 'function') {
                 listener(event.target.value)
             }
         }
@@ -187,13 +285,21 @@ export class PostCubeNode extends PostCube {
         const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
         // characteristic.addListener()
 
-        return () => {
+        const stopListening = () => {
             PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
                 `Stopped listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
             )
 
+            isListening = false
+            if (timeout) {
+                clearTimeout(timeout)
+                timeout = null
+            }
+
             // characteristic.removeListener()
         }
+
+        return stopListening
     }
 }

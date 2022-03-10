@@ -1,12 +1,20 @@
 
 export const PACKET_SIZE                = 20
+export const PACKET_LAST_INDEX          = 0x0
+export const PACKET_LAST_TRUE           = 0x0
+export const PACKET_LAST_FALSE          = 0x1
+export const COMMAND_ID_SIZE            = 4 // bytes = 32bit uint
 export const DEFAULT_TIMEOUT_CONNECT    = 7000
 export const DEFAULT_TIMEOUT_DISCONNECT = 3000
+export const DEFAULT_TIMEOUT_IO         = 4000
+export const DEFAULT_TIMEOUT_LISTEN     = 10000
+export const AUTH_TAG_SIZE              = 16
+export const NONCE                      = new Uint8Array(12)
 
 export const SERVICE_BATTERY_UUID    = '0000180f-0000-1000-8000-00805f9b34fb'
 export const CHAR_BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb'
 
-export const BOX_MAGIC         = 0x0B0E0E0F
+export const BOX_MAGIC         = 0x0b0e0e0f
 export const SERVICE_UUID_16   = 0x8000
 export const SERVICE_UUID_BASE = [
     0xb6, 0xc0, 0xb8, 0xc2, 0xa6, 0x77, 0xe8, 0x87,

@@ -8,6 +8,8 @@ defaults: &defaults
 jobs:
   test:
     <<: *defaults
+    environment:
+      MOCHA_REPORTER: mocha-junit-reporter
     steps:
       - checkout
       - attach_workspace:
@@ -18,6 +20,14 @@ jobs:
       - run:
           name: Run test
           command: npm run test
+      - store_test_results:
+          path: ~/project/results
+      - store_artifacts:
+          path: ~/project/results
+      - store_test_results:
+          path: ~/project/coverage
+      - store_artifacts:
+          path: ~/project/coverage
   publish-browser:
     <<: *defaults
     steps:
@@ -55,8 +65,8 @@ jobs:
           name: Build SDK (Node.js)
           command: npm run build:node
       - run:
-          name: Emptify postcube.web.js and postcube.capacitor.js CJS
-          command: cat /dev/null > build/cjs/apiBLE/postcube.web.js && cat /dev/null > build/cjs/apiBLE/postcube.capacitor.js
+          name: Emptify react.module.js, apiBLE/postcube.web.js and apiBLE/postcube.capacitor.js CJS
+          command: cat /dev/null > build/cjs/react.module.js cat /dev/null > build/cjs/apiBLE/postcube.web.js && cat /dev/null > build/cjs/apiBLE/postcube.capacitor.js
       - run:
           name: Create .npmrc file
           command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc

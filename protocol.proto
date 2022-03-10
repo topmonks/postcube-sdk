@@ -2,17 +2,13 @@ syntax = "proto3";
 package postcube;
 
 message EncryptedPacket {
-  oneof encryption {
-    uint32 encryptionKeyId = 1;
-    bytes hashedSecret = 2;
-  }
-
+  uint32 commandId = 1;
+  uint32 encryptionKeyId = 2;
   bytes payload = 3;
+  bytes hash = 4;
 }
 
 message Packet {
-  uint32 commandId = 1;
-  // uint32 magic = 2;
   uint32 expireAt = 3;
   oneof command {
     SetKey setKey = 4;

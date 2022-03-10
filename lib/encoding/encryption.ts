@@ -1,23 +1,76 @@
 
-import { chunk } from 'lodash'
 
-export const hash = async(data: Iterable<number>) => {
-    const buffer = new Uint8Array(data)
+import { doISeriouslyHaveToUseSubtleCrypto } from '../helpers'
+import {
+    generateKeyPair as generateKeyPairSubtle,
+    cipher as cipherSubtle,
+    deriveEncryptionKey as deriveEncryptionKeySubtle,
+} from './encryption.subtle'
+import {
+    generateKeyPair as generateKeyPairNode,
+    cipher as cipherNode,
+    deriveEncryptionKey as deriveEncryptionKeyNode,
+} from './encryption.node'
 
-    if (typeof crypto?.subtle?.digest === 'function') {
-        const result = await crypto.subtle.digest('SHA-256', buffer)
-        return new Uint8Array(result)
+export interface EncryptionKeys {
+    keyIndex?: number
+    hashedSecretCode?: Uint8Array
+    privateKey?: Uint8Array|number[]
+    publicKey?: Uint8Array|number[]
+}
+
+export const generateKeyPair = async(): Promise<{
+    privateKey: Uint8Array
+    publicKey: Uint8Array
+}> => {
+    if (doISeriouslyHaveToUseSubtleCrypto()) {
+        return generateKeyPairSubtle()
     }
 
-    const cryptoNode = await import('crypto')
+    return generateKeyPairNode()
+}
 
-    const digestedHash = cryptoNode
-        .createHash('sha256')
-        .update(buffer)
-        .digest('hex')
+export const cipher = async(
+    encryptionKey: Uint8Array,
+    data: Iterable<number>,
+    keys: EncryptionKeys,
+): Promise<{
+    encrypted: Buffer
+    authTag: Buffer
+}> => {
+    if (doISeriouslyHaveToUseSubtleCrypto()) {
+        return cipherSubtle(encryptionKey, data, keys)
+    }
 
-    const hashBuffer = chunk(digestedHash, 2)
-        .map(byte => parseInt(byte.join(''), 16))
+    return cipherNode(encryptionKey, data, keys)
+}
 
-    return new Uint8Array(hashBuffer)
+export const decipher = async(
+    encryptionKey: Uint8Array,
+    data: Iterable<number>,
+    keys: EncryptionKeys,
+): Promise<{ decrypted: Buffer }> => {
+    const { encrypted } = await cipher(encryptionKey, data, keys)
+
+    return { decrypted: encrypted }
+}
+
+export const deriveEncryptionKey = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
+    if (doISeriouslyHaveToUseSubtleCrypto()) {
+        return deriveEncryptionKeySubtle(commandId, keys)
+    }
+
+    return deriveEncryptionKeyNode(commandId, keys)
+}
+
+export const encrypt = async(data: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
+    const encryptionKey = await deriveEncryptionKey(commandId, keys)
+
+    return cipher(encryptionKey, data, keys)
+}
+
+export const decrypt = async(encryptedData: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
+    const encryptionKey = await deriveEncryptionKey(commandId, keys)
+
+    return decipher(encryptionKey, encryptedData, keys)
 }

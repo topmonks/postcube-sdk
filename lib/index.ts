@@ -7,15 +7,34 @@ export {
     BleErrorCode,
 } from './errors'
 export {
+    sanitizePublicKey,
     getFuture,
     getFutureEpoch,
     parseSecretCode,
     parsePostCubeName,
+    doISeriouslyHaveToUseSubtleCrypto,
 } from './helpers'
 export { PostCubeLogger } from './logger'
 
 
-// Boxes API
+// Encoding
+
+export {
+    EncodingEncryptionStrategy,
+    encodeCommand,
+    encodeResult,
+    chunkBuffer,
+    parseBufferChunk,
+    decodeChunkedResult,
+    decodeChunkedPacket,
+} from './encoding'
+export type {
+    Command,
+    EncodingOptions,
+} from './encoding'
+
+
+// BLE API
 
 export {
     PostCubeBLE,
@@ -64,10 +83,17 @@ export {
 } from './constants/box'
 export {
     PACKET_SIZE,
+    PACKET_LAST_INDEX,
+    PACKET_LAST_TRUE,
+    PACKET_LAST_FALSE,
+    COMMAND_ID_SIZE,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
+    DEFAULT_TIMEOUT_IO,
+    DEFAULT_TIMEOUT_LISTEN,
+    AUTH_TAG_SIZE,
+    NONCE,
     SERVICE_BATTERY_UUID,
-    CHAR_BATTERY_LEVEL_UUID,
     BOX_MAGIC,
     SERVICE_UUID_16,
     SERVICE_UUID_BASE,

@@ -1,8 +1,18 @@
 ---
 layout: default
-title: Bluetooth API
-slug: cubes
+slug: bluetooth-api
+title: BLE API Docs
+isMenuItem: true
 ---
+
+### Content
+
+- [(Binary) command encoding](./encoding)
+
+
+<br/><br/><br/><br/><br/>
+
+# To Be Discarted:
 
 ## Supported platforms
 

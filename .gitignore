@@ -1,3 +1,4 @@
+
 _site
 .sass-cache
 .jekyll-cache
@@ -9,5 +10,9 @@ vendor
 node_modules
 
 build
+
+.nyc_output
+coverage
+results
 
 *.pb.*

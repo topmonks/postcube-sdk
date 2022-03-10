@@ -3,6 +3,17 @@ import { chunk } from 'lodash'
 
 import { bleErrors } from './errors'
 
+export const sanitizePublicKey = (publicKey: Uint8Array) => {
+    // Uncompressed format adds 0x04 prefix at the beginning of the public key
+    // micro-ecc library accepts public keys without this prefix
+    // so remove it here
+    if (publicKey.length === 65 && publicKey[0] === 0x04) {
+        publicKey = publicKey.slice(1)
+    }
+
+    return publicKey
+}
+
 export const getFuture = (hours: number) => {
     const future = new Date()
     future.setHours(future.getHours() + hours)
@@ -63,4 +74,17 @@ export const parsePostCubeName = (name: string): {
             nameParts[1] : null,
         isDev,
     }
+}
+
+export const doISeriouslyHaveToUseSubtleCrypto = () => {
+    return (
+        typeof window !== 'undefined'
+        && typeof window?.crypto?.getRandomValues === 'function'
+        && typeof window?.crypto?.subtle?.digest === 'function'
+        && typeof window?.crypto?.subtle?.generateKey === 'function'
+        && typeof window?.crypto?.subtle?.encrypt === 'function'
+        && typeof window?.crypto?.subtle?.deriveBits === 'function'
+        && typeof window?.crypto?.subtle?.importKey === 'function'
+        && typeof window?.crypto?.subtle?.exportKey === 'function'
+    )
 }

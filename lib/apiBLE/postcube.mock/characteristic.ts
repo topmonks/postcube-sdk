@@ -72,69 +72,67 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
     })
 
     const processCommand = async() => {
-        let packet: protocol.Packet
-
         try {
-            packet = await decodeChunkedPacket(commandBuffer)
+            const { encryptedPacket, packet } = await decodeChunkedPacket(commandBuffer)
+
+            let resultCode = 0
+            switch (true) {
+            case !!packet.timeSync:
+                if (postCubeMock.deviceConfig.timeSyncDelayMs) {
+                    await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.timeSyncDelayMs))
+                }
+
+                resultCode = postCubeMock.deviceConfig.timeSyncResult ?
+                    postCubeMock.deviceConfig.timeSyncResult : RES_OK
+                break
+            case !!packet.unlock:
+                if (postCubeMock.deviceConfig.unlockDelayMs) {
+                    await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.unlockDelayMs))
+                }
+
+                resultCode = postCubeMock.deviceConfig.unlockResult ?
+                    postCubeMock.deviceConfig.unlockResult : RES_OK
+                break
+            case !!packet.setKey:
+                if (postCubeMock.deviceConfig.setKeyDelayMs) {
+                    await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.setKeyDelayMs))
+                }
+
+                resultCode = postCubeMock.deviceConfig.setKeyResult ?
+                    postCubeMock.deviceConfig.setKeyResult : RES_OK
+
+                if (resultCode === RES_OK) {
+                    postCubeMock.setKeyIndex(packet.setKey.keyIndex)
+                    postCubeMock.setPublicKey(packet.setKey.publicKey)
+                }
+                break
+            case !!packet.nuke:
+                if (postCubeMock.deviceConfig.factoryResetDelayMs) {
+                    await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.factoryResetDelayMs))
+                }
+
+                resultCode = postCubeMock.deviceConfig.factoryResetResult ?
+                    postCubeMock.deviceConfig.factoryResetResult : RES_OK
+                break
+            default:
+                resultCode = RES_INVALID_CMD
+                break
+            }
+
+            const result = await encodeResult(encryptedPacket.commandId, resultCode)
+            const chunks = await chunkBuffer(result)
+
+            const characteristic = await postCubeMock.getCharacteristic(SERVICE_UUID, CHAR_RESULT_UUID)
+            for (const chunk of chunks) {
+                const resultPacketDelayMs = postCubeMock.deviceConfig.resultPacketDelayMs || 250
+                await new Promise(resolve => setTimeout(resolve, resultPacketDelayMs))
+
+                await characteristic.writeValue(chunk)
+            }
         } catch (err) {
             throw err
         } finally {
             commandBuffer = []
-        }
-
-        let resultCode = 0
-        switch (true) {
-        case !!packet.timeSync:
-            if (postCubeMock.deviceConfig.timeSyncDelayMs) {
-                await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.timeSyncDelayMs))
-            }
-
-            resultCode = postCubeMock.deviceConfig.timeSyncResult ?
-                postCubeMock.deviceConfig.timeSyncResult : RES_OK
-            break
-        case !!packet.unlock:
-            if (postCubeMock.deviceConfig.unlockDelayMs) {
-                await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.unlockDelayMs))
-            }
-
-            resultCode = postCubeMock.deviceConfig.unlockResult ?
-                postCubeMock.deviceConfig.unlockResult : RES_OK
-            break
-        case !!packet.setKey:
-            if (postCubeMock.deviceConfig.setKeyDelayMs) {
-                await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.setKeyDelayMs))
-            }
-
-            resultCode = postCubeMock.deviceConfig.setKeyResult ?
-                postCubeMock.deviceConfig.setKeyResult : RES_OK
-
-            if (resultCode === RES_OK) {
-                postCubeMock.setKeyIndex(packet.setKey.keyIndex)
-                postCubeMock.setPublicKey(packet.setKey.publicKey)
-            }
-            break
-        case !!packet.nuke:
-            if (postCubeMock.deviceConfig.factoryResetDelayMs) {
-                await new Promise(resolve => setTimeout(resolve, postCubeMock.deviceConfig.factoryResetDelayMs))
-            }
-
-            resultCode = postCubeMock.deviceConfig.factoryResetResult ?
-                postCubeMock.deviceConfig.factoryResetResult : RES_OK
-            break
-        default:
-            resultCode = RES_INVALID_CMD
-            break
-        }
-
-        const result = await encodeResult(packet.commandId, resultCode)
-        const chunks = await chunkBuffer(result)
-
-        const characteristic = await postCubeMock.getCharacteristic(SERVICE_UUID, CHAR_RESULT_UUID)
-        for (const chunk of chunks) {
-            const resultPacketDelayMs = postCubeMock.deviceConfig.resultPacketDelayMs || 250
-            await new Promise(resolve => setTimeout(resolve, resultPacketDelayMs))
-
-            await characteristic.writeValue(chunk)
         }
     }
 

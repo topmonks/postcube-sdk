@@ -1,11 +1,11 @@
 ---
 layout: default
-slug: api
-title: API Docs
+slug: http-api
+title: HTTP API Docs
 isMenuItem: true
 ---
 
-# API Docs
+# HTTP API Docs
 
 baseUrl: `https://europe-west1-chytrybox.cloudfunctions.net`
 

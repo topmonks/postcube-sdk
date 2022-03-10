@@ -19,4 +19,6 @@ export enum BleErrorCode {
     invalidKeys              = 'invalid_keys',
     invalidCommand           = 'invalid_command',
     invalidCommandTooLarge   = 'invalid_command_too_large',
+    invalidAuthentication    = 'invalid_authentication',
+    timeout                  = 'timeout',
 }

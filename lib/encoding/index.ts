@@ -1,38 +1,22 @@
 
-import * as elliptic from 'elliptic'
-
 import * as protocol from '../protocol.pb'
 import { bleErrors } from '../errors'
 import {
     PACKET_SIZE,
+    NONCE,
+    PACKET_LAST_INDEX,
+    PACKET_LAST_TRUE,
+    PACKET_LAST_FALSE,
 } from '../constants/bluetooth'
 import {
     getFutureEpoch,
     parseSecretCode,
 } from '../helpers'
-import { hash } from './encryption'
-import * as chacha20 from './chacha20'
+import { hashSHA256 } from './hash'
+import { EncryptionKeys, encrypt, decrypt } from './encryption'
+import { generateCommandId } from './command'
 
-const NONCE = new Uint8Array(12)
-
-const secp256k1 = new elliptic.ec('secp256k1')
-
-const generateCommandId = async(options: EncodingOptions): Promise<number> => {
-    if (typeof crypto?.getRandomValues === 'function') {
-        return crypto.getRandomValues(new Uint32Array(1))[0]
-    }
-
-    const { randomBytes } = await import('crypto')
-    return randomBytes(4).readUInt32LE(0)
-}
-
-const deriveEncryptionKey = async(keys: EncryptionKeys): Promise<Uint8Array> => {
-    const privateKey = secp256k1.keyFromPrivate(keys.privateKey)
-    const publicKey = secp256k1.keyFromPublic(keys.publicKey)
-    const sharedKey = privateKey.derive(publicKey.getPublic())
-
-    return await hash(sharedKey.toArray())
-}
+export type { EncryptionKeys }
 
 export enum CommandType {
     setKey   = 'setKey',
@@ -54,75 +38,118 @@ export type Command = {
     [K in keyof CommandMap]-?: Required<Pick<CommandMap, K>> & Partial<Pick<CommandMap, Exclude<keyof CommandMap, K>>>;
 }[keyof CommandMap]
 
-export interface EncryptionKeys {
-    keyIndex?: number
-    privateKey?: Uint8Array|number[]
-    publicKey?: Uint8Array|number[]
+export enum EncodingEncryptionStrategy {
+    secretCode = 'secretcode',
+    key        = 'key',
 }
 
 export interface EncodingOptions {
+    commandId?: number
+    expireAt?: number
+    boxId?: string|Iterable<number>
     secretCode?: string|Iterable<number>
     keys?: EncryptionKeys
+    encryptionStrategy?: EncodingEncryptionStrategy
 }
 
-const detectAndEncodeCommand = (command: Command): Uint8Array => {
-    const commandProperties = Object.getOwnPropertyNames(command)
-
-    switch (false) {
-    case !~commandProperties.indexOf(CommandType.setKey):
-        return protocol.encodeSetKey(command[CommandType.setKey])
-    case !~commandProperties.indexOf(CommandType.unlock):
-        return protocol.encodeUnlock(command[CommandType.unlock])
-    case !~commandProperties.indexOf(CommandType.timeSync):
-        return protocol.encodeTimeSync(command[CommandType.timeSync])
-    case !~commandProperties.indexOf(CommandType.nuke):
-        return protocol.encodeNuke(command[CommandType.nuke])
-    case !~commandProperties.indexOf(CommandType.protect):
-        return protocol.encodeProtect(command[CommandType.protect])
+const resolveEncryptionStrategy = (options: EncodingOptions): EncodingEncryptionStrategy => {
+    if (!!options?.encryptionStrategy) {
+        return options.encryptionStrategy
     }
 
-    throw bleErrors.invalidCommand()
+    if (
+        !!options?.keys?.hashedSecretCode
+        && typeof options?.keys?.keyIndex === 'number'
+        && !!options?.keys?.privateKey
+        && !!options?.keys?.publicKey
+    ) {
+        return EncodingEncryptionStrategy.key
+    }
+
+    if (!!options?.keys?.hashedSecretCode) {
+        return EncodingEncryptionStrategy.secretCode
+    }
+
+    return null
+}
+
+const resolveCommandType = (command: Command): CommandType => {
+    switch (true) {
+    case typeof command[CommandType.setKey]   === 'object': return CommandType.setKey
+    case typeof command[CommandType.unlock]   === 'object': return CommandType.unlock
+    case typeof command[CommandType.timeSync] === 'object': return CommandType.timeSync
+    case typeof command[CommandType.nuke]     === 'object': return CommandType.nuke
+    case typeof command[CommandType.protect]  === 'object': return CommandType.protect
+    }
+
+    return null
+}
+
+const validateCommand = (command: Command, existingCommand: CommandType) => {
+    if (!existingCommand) {
+        throw bleErrors.invalidCommand('Empty command')
+    }
+
+    const commandDuplicate = Object.assign({}, command)
+    delete commandDuplicate[existingCommand]
+
+    if (!!resolveCommandType(commandDuplicate)) {
+        throw bleErrors.invalidCommand('Command must specify exactly 1 action (setKey/unlock/timeSync/nuke/protect)')
+    }
 }
 
 export const encodeCommand = async(command: Command, options: EncodingOptions = {}): Promise<Uint8Array> => {
-    const commandId = await generateCommandId(options)
-    const expireAt = getFutureEpoch(24)
+    const commandId = options?.commandId || await generateCommandId()
+    const expireAt = options?.expireAt || await getFutureEpoch(24)
 
-    let encodedCommand = detectAndEncodeCommand(command)
+    const commandType = await resolveCommandType(command)
 
-    let encodedPacket: Uint8Array = protocol.encodePacket({
-        ...command,
-        commandId,
-        expireAt,
-    })
+    await validateCommand(command, commandType)
 
-    if (options.secretCode) {
-        const hashedSecret = await hash(parseSecretCode(options.secretCode))
+    let encodedPacket: Uint8Array = await protocol.encodePacket({ expireAt, ...command })
 
-        encodedPacket = protocol.encodeEncryptedPacket({
-            hashedSecret,
-            payload: encodedCommand,
-        })
+    if (!!options.boxId && !!options.secretCode) {
+        const payload = [
+            ...(typeof options.boxId === 'string' ?
+                Buffer.from(options.boxId, 'utf-8') :
+                options.boxId),
+            ...parseSecretCode(options.secretCode),
+        ]
+
+        options.keys = options.keys || {}
+        options.keys.hashedSecretCode = await hashSHA256(payload)
     }
 
-    if (options.keys) {
-        const encryptionKey = await deriveEncryptionKey(options.keys)
-        const encryptedPayload: Uint8Array = chacha20.encrypt(encryptionKey, NONCE, encodedCommand)
+    const encryptionStrategy: EncodingEncryptionStrategy = await resolveEncryptionStrategy(options)
 
-        encodedPacket = protocol.encodeEncryptedPacket({
-            encryptionKeyId: options.keys.keyIndex,
-            payload: encryptedPayload,
-        })
+    if (encryptionStrategy === EncodingEncryptionStrategy.secretCode && commandType !== CommandType.setKey) {
+        throw bleErrors.invalidAuthentication('Secret code can be used exclusively with `setKey` command')
     }
 
-    if (encodedPacket.length > 254) {
+    if (encryptionStrategy) {
+        const encryptedPacketPayload: protocol.EncryptedPacket = { commandId }
+
+        switch (encryptionStrategy) {
+        case EncodingEncryptionStrategy.secretCode:
+            encryptedPacketPayload.hash = options.keys.hashedSecretCode
+            encryptedPacketPayload.payload = encodedPacket
+            break
+        case EncodingEncryptionStrategy.key:
+            const { encrypted, authTag } = await encrypt(encodedPacket, commandId, options.keys)
+
+            encryptedPacketPayload.encryptionKeyId = options.keys.keyIndex
+            encryptedPacketPayload.payload = encrypted
+            break
+        }
+
+        encodedPacket = await protocol.encodeEncryptedPacket(encryptedPacketPayload)
+    }
+
+    if (encodedPacket.length > 255) {
         throw bleErrors.invalidCommandTooLarge()
     }
 
-    return new Uint8Array(Buffer.from([
-        encodedPacket.length,
-        ...encodedPacket,
-    ]))
+    return new Uint8Array(Buffer.from(encodedPacket))
 }
 
 export const encodeResult = async(commandId: number, value?: number, errorCode?: number): Promise<Uint8Array> => {
@@ -134,12 +161,20 @@ export const chunkBuffer = async(buffer: ArrayBufferLike): Promise<DataView[]> =
     const chunks: DataView[] = []
 
     for (let index = 0; index < buffer.byteLength; index += PACKET_SIZE - 1) {
-        const chunk = new Uint8Array(PACKET_SIZE)
+        const dataView = new DataView(new ArrayBuffer(PACKET_SIZE))
 
-        chunk.set([ Number(index + PACKET_SIZE - 1 < buffer.byteLength) ], 0)
-        chunk.set(new Uint8Array(buffer.slice(index, index + PACKET_SIZE - 1)), 1)
+        for (
+            let offset = 1, bufferOffset = index;
+            bufferOffset < Math.min(buffer.byteLength, index + PACKET_SIZE - 1);
+            offset++, bufferOffset++
+        ) {
+            dataView.setUint8(offset, buffer[bufferOffset])
+        }
 
-        chunks.push(new DataView(chunk.buffer))
+        const isLast = index + PACKET_SIZE - 1 < buffer.byteLength
+        dataView.setUint8(PACKET_LAST_INDEX, isLast ? PACKET_LAST_FALSE : PACKET_LAST_TRUE)
+
+        chunks.push(dataView)
     }
 
     return chunks
@@ -150,9 +185,18 @@ export const parseBufferChunk = async(chunk: DataView): Promise<{
     isLast: boolean
 }> => {
     const buffer: number[] = []
-    const isLast = !chunk.getUint8(0)
 
-    for (let offset = 1; offset < PACKET_SIZE; offset++) {
+    let isLast: boolean = null
+    switch (chunk.getUint8(PACKET_LAST_INDEX)) {
+    case PACKET_LAST_TRUE:  isLast = true;  break
+    case PACKET_LAST_FALSE: isLast = false; break
+    }
+
+    for (let offset = 0; offset < PACKET_SIZE; offset++) {
+        if (offset === PACKET_LAST_INDEX) {
+            continue
+        }
+
         if (offset === chunk.byteLength) {
             break
         }
@@ -176,55 +220,70 @@ const decodeEncryptedPacket = async(buffer: Uint8Array): Promise<[ protocol.Encr
     try {
         encryptedPacket = await protocol.decodeEncryptedPacket(buffer)
 
-        if (typeof encryptedPacket.encryptionKeyId !== 'number' && !encryptedPacket.hashedSecret) {
-            throw bleErrors.invalidCommand('EncryptedPacket must contain either encryptionKeyId or hashedSecret')
+        if (typeof encryptedPacket.encryptionKeyId !== 'number' && !encryptedPacket.hash) {
+            throw bleErrors.invalidCommand('EncryptedPacket must contain either encryptionKeyId or hash')
         }
     } catch (err) {
         try {
             const packet = await protocol.decodePacket(buffer)
 
-            if (!packet.commandId || !packet.expireAt) {
-                throw Error()
-            }
-
-            return [ encryptedPacket, packet ]
-        } catch (_err) { throw err }
+            return [ null, packet ]
+        } catch (_err) {
+            throw err
+        }
     }
 
     return [ encryptedPacket, null ]
 }
 
-export const decodeChunkedPacket = async(chunks: number[][], options: EncodingOptions = {}): Promise<protocol.Packet> => {
-    const buffer = chunks.reduce((buffer, chunk) => [ ...chunk, ...buffer ], [])
-    const [ encryptedPacket, packet ] = await decodeEncryptedPacket(new Uint8Array(buffer))
+export const decodeChunkedPacket = async(
+    chunks: number[][],
+    options: EncodingOptions = {},
+): Promise<{
+    packet: protocol.Packet
+    encryptedPacket: protocol.EncryptedPacket
+}> => {
+    const buffer = chunks.reduce((buffer, chunk) => [ ...buffer, ...chunk ], [])
+    let [ encryptedPacket, packet ] = await decodeEncryptedPacket(new Uint8Array(buffer))
 
     if (packet) {
-        return packet
+        return { encryptedPacket, packet }
     }
 
-    if (encryptedPacket.hashedSecret) {
-        const hashedSecret = await hash(parseSecretCode(options.secretCode))
+    if (encryptedPacket.hash) {
+        const hashedSecret = await hashSHA256([
+            ...(typeof options.boxId === 'string' ?
+                Buffer.from(options.boxId, 'utf-8') :
+                options.boxId),
+            ...parseSecretCode(options.secretCode),
+        ])
 
-        if (hashedSecret.length !== encryptedPacket.hashedSecret.length) {
+        if (hashedSecret.length !== encryptedPacket.hash.length) {
             throw bleErrors.invalidSecretCode()
         }
 
         for (let offset = 0; offset < hashedSecret.length; offset++) {
-            if (encryptedPacket.hashedSecret[offset] !== hashedSecret[offset]) {
+            if (encryptedPacket.hash[offset] !== hashedSecret[offset]) {
                 throw bleErrors.invalidSecretCode()
             }
         }
 
-        const packet = await protocol.decodePacket(encryptedPacket.payload)
-        return packet
+        packet = await protocol.decodePacket(encryptedPacket.payload)
+
+        return { encryptedPacket, packet }
     }
 
-    if (encryptedPacket.encryptionKeyId !== options.keys.keyIndex) {
-        throw bleErrors.invalidKeys('Unknown encryption key id')
-    }
+    // if (encryptedPacket.encryptionKeyId !== options.keys.keyIndex) {
+    //     throw bleErrors.invalidKeys('Unknown encryption key id')
+    // }
 
-    const encryptionKey = await deriveEncryptionKey(options.keys)
-    const encodedPacket: Uint8Array = chacha20.decrypt(encryptionKey, NONCE, encryptedPacket.payload)
+    const { decrypted } = await decrypt(
+        encryptedPacket.payload,
+        encryptedPacket.commandId,
+        options.keys,
+    )
 
-    return await protocol.decodePacket(encodedPacket)
+    packet = await protocol.decodePacket(decrypted)
+
+    return { encryptedPacket, packet }
 }

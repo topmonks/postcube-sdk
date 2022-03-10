@@ -60,4 +60,10 @@ export const bleErrors = {
 
     invalidCommandTooLarge: (message: string = 'BLE command is larger then 255 bytes') =>
         new BleError(BleErrorCode.invalidCommandTooLarge, message),
+
+    invalidAuthentication: (message: string = 'Invalid authentication') =>
+        new BleError(BleErrorCode.invalidAuthentication, message),
+
+    timeout: (message: string) =>
+        new BleError(BleErrorCode.timeout, message),
 }
