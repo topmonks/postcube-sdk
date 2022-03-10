@@ -3,8 +3,7 @@ layout: default
 slug: command-encoding
 title: BLE Command Encoding
 submenu: bluetooth-api
-# isMenuItem: false
-isSubmenu: true
+isMenuItem: true
 ---
 
 To compose a binary command which will then be transmitted via Bluetooth, use either the Protol Buffers template (`/protocol.proto` and `/protocol.options` files - **the hard way**), or use functions provided by this package (the easy way):

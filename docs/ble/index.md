@@ -2,7 +2,7 @@
 layout: default
 slug: bluetooth-api
 title: BLE API Docs
-isMenuItem: true
+isSubmenu: true
 ---
 
 ### Content
