@@ -2,6 +2,7 @@
 layout: default
 slug: command-encoding
 title: BLE Command Encoding
+isMenuItem: false
 isSubmenu: true
 ---
 
