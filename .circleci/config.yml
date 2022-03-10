@@ -18,16 +18,16 @@ jobs:
           name: Install dependecies
           command: npm install
       - run:
-          name: Run test
+          name: Run tests
           command: npm run test
       - store_test_results:
-          path: ~/project/results
+          path: ~/repo/results
       - store_artifacts:
-          path: ~/project/results
+          path: ~/repo/results
       - store_test_results:
-          path: ~/project/coverage
+          path: ~/repo/coverage
       - store_artifacts:
-          path: ~/project/coverage
+          path: ~/repo/coverage
   publish-browser:
     <<: *defaults
     steps:
