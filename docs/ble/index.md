@@ -1,6 +1,6 @@
 ---
 title: BLE API Docs
-slug: bluetooth-api
+slug: bluetooth
 isSubmenu: true
 ---
 

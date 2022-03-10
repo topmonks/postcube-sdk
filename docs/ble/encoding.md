@@ -1,7 +1,7 @@
 ---
 title: BLE Command Encoding
-slug: command-encoding
-submenu: bluetooth-api
+slug: command_encoding
+submenu: bluetooth
 isMenuItem: true
 ---
 
