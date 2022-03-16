@@ -6,13 +6,13 @@ title: PostCube
 # PostCube
 
 [PostCube](https://postcube.cz/) je dopravní společnost se sítí boxů pro bezkontaktní doručení a vyzvednutí
-balíkových zásilek.
+balíkových zásilek. Umíme i klasické doručování a vyzvednutí zásilek, takže je možné jak doručení box-box,
+tak z adresa-box, box-adresa i z adresy na adresu.
 
-Umíme i klasické doručování a vyzvednutí zásilek, takže je možné jak doručení box-box, tak z adresa-box, box-adresa i
-z adresy na adresu. Zde naleznete technické informace, návody a příklady jak PostCube integrovat ve Vašem eshopu či aplikaci
-pro kurýry. 
+Zde naleznete technické informace, návody a příklady jak PostCube integrovat ve Vašem eshopu či aplikaci pro kurýry. 
 
-Zákazníci PostCube mají boxy pro odeslání a doručení balíků. Majitel boxu při nemusí být fyzicky přítomen, kurýr může
+# Boxy
+Zákazníci PostCube mají boxy pro odeslání a doručení balíků. Majitel boxu nemusí být fyzicky přítomen, kurýr může
 schránku otevřít sám.
 
 Samotný box není připojen k internetu, je napájen baterií a lze otevřít výhradně přes Bluetooth protokol. Klíče pro
