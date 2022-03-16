@@ -1,36 +1,69 @@
 ---
 layout: landing
-title: PostCube SDK
+title: PostCube
 ---
 
-# PostCube Integration
+# PostCube
 
-## Aplikace
+[PostCube](https://postcube.cz/) je dopravní společnost se sítí boxů pro bezkontaktní doručení a vyzvednutí
+balíkových zásilek.
 
-Primárně mobilní aplikace PostCube je založená na webových technologiích. Většině uživatelů je distribuovaná v podobě instalovatelné PWA (Progressive Web App) na adrese [app.postcube.cz](https://app.postcube.cz/). Pro iOS uživatele je dostupná v [Apple Store](https://apps.apple.com/us/app/postcube/id1537386836) (veřejnou beta verzi najdete v [TestFlight](https://testflight.apple.com/join/zfgoO80t)).
+Umíme i klasické doručování a vyzvednutí zásilek, takže je možné jak doručení box-box, tak z adresa-box, box-adresa i
+z adresy na adresu. Zde naleznete technické informace, návody a příklady jak PostCube integrovat ve Vašem eshopu či aplikaci
+pro kurýry. 
 
-![App is Web](/assets/images/app-is-web.png)
+Zákazníci PostCube mají boxy pro odeslání a doručení balíků. Majitel boxu při nemusí být fyzicky přítomen, kurýr může
+schránku otevřít sám.
 
-### Bluetooth
+Samotný box není připojen k internetu, je napájen baterií a lze otevřít výhradně přes Bluetooth protokol. Klíče pro
+otevření jsou vždy časově omezené a platné pouze pro danou zásilku. Pouze majitel boxu jej může otevřít kdykoliv.
 
-Zámek PostCube schránky je aplikací ovládán pomocí [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API). Na iOS, kde toto API není podporováno, je přístup k zámku zajištěn přes [cordova-plugin-ble-central](https://github.com/don/cordova-plugin-ble-central). 
+PostCube spolupracuje s kurýrními společnostmi, aby zajistil doručování zásilek. Nabídne tak zákazníkům vždy
+volbu ceny a času přepravy z aktuálně poptané nabídky.
 
-Alternativně je možné zámek otevřít pomocí jednorázového kódu vygenerovaného na straně PostCube. Ten pak již jen stačí přeposlat pomocí BLE (Bluetooth Low Energy) na zařízení zámku.
+### Eshopy
+Eshopy pro integraci potřebují svým zákazníkům nabízet cenu přepravy v daném čase a vzdálenosti a kromě klasické adresy
+umět pracovat i s doručením z/do PostCube boxu podle jeho ID.
 
-**Ukázka (demo) webové aplikace pro [otevření schránky zde](https://docs.postcube.cz/examples/unlock-device/build/)**.
+Pokud Váš eshop běží na platformě [Shoptet](https://www.shoptet.cz),
+nainstalujte [doplněk PostCube](https://doplnky.shoptet.cz/postcube) a následujte instrukce.
 
-### SDK API
+Připravujeme možnost integrace pro ostatní platformy přes [PostCube HTTP API](https://docs.postcube.cz/docs/api/).
 
-#### Install
+### Kurýrní společnosti a dopravci
+Nabídku dopravy integruje PostCube ve svém API jako strana klientská. S dopravcem může být sjednána buď
+paušální cena, nebo je možné nabízet cenu dynamicky provoláním API kurýra. Pro danou dvojici adres nabídne PostCube API
+svým zákazníkům cenu, kterou uvidí v aplikaci nebo eshopu.
 
-```
-npm install @topmonks/postcube
-```
+PostCube bude potřebovat pro integraci:
+* [API endpoint pro objednání zásilky](https://docs.postcube.cz/docs/kuryri/zasilky.html).
+  V ideálním případě HTTP POST s JSON payload.
+* Možnost registrovat [Webhook změny stavu zásilky](https://docs.postcube.cz/docs/kuryri/webhook.html) nebo
+  dotazovat stav přes API kurýrní společnosti. V ideálním případě webhook HTTP POST s JSON payload.
+* V případě dynamických cen
+  [API endpoint pro aktuální nabídku dopravy](https://docs.postcube.cz/docs/kuryri/dopravy.html) na základě adres
+  vyzvednutí a doručení zásilky.
 
-### Basic usage
+![Nabídka dopravy](assets/images/nabidka-dopravy.png)
 
-```javascript
-import { PostCubeSDK } from '@topmonks/postcube'
+### Vyzvednutí a doručení zásilky kurýrem
+Kurýr odbdrží od své společnosti [odkaz pro otevření boxu](https://docs.postcube.cz/docs/kuryri/odkaz.html)
+(například v poznámce) nebo [binární klíč](https://docs.postcube.cz/docs/kuryri/klic.html) pro otevření boxu
+(přímá interakce s boxy aplikací kurýra).
 
-console.log(PostCubeSDk.IsConnected) // false
-```
+Stránka z odkazu se spojí přes Bluetooth API s boxem a otevře jej. umí otevřít jak box pro vyzvednutí, tak box
+pro doručení zásilky. Ve spolupráci s PostCube ověřte, že kurýři mohou odkaz otevřít a použít ve svém prohlížeči.
+
+Pokud má kurýr v aplikaci přímo integrovaný PostCube, stačí mu k otevření boxu jednorázový binární klíč. Klíče
+(pro vyzvednutí a/nebo doručení) generuje PostCube s časovou platností (např. týden) v momentě objednání zásilky
+a předá je API kurýrní společnosti. Lze je tedy využít i pro offline otevření mimo signál internetového připojení.
+
+Doručení i vyzvednutí na adrese bez boxu probíhá běžným způsobem. Kurýr má pro komunikaci telefonní číslo adresáta.
+
+Máte-li vlastní webovou aplikaci pro kurýry, můžete použít [PostCube Web SDK](https://docs.postcube.cz/docs/sdk/web.html)
+namísto odkazu.
+
+Aplikace na ostatních platformách (například nativní aplikace) mohou pro kurýry implementovat klienta
+[PostCube Bluetooth API](https://docs.postcube.cz/docs/bluetooth/). Klíč stačí zapsat do příslušné charakteristiky
+Bluetooth služby daného boxu, ostatní části služby kurýr nepotřebuje a ani použít nemůže (nemá privátní klíč pro
+zašifrování zprávy).

@@ -16,3 +16,5 @@ coverage
 results
 
 *.pb.*
+
+/.idea
