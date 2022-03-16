@@ -40,34 +40,34 @@ const device = await navigator.bluetooth.requestDevice({
 Binární klíč je předgenerovaný a zašifrovaný příkaz pro konkrétní box k otevření zámku. Poskytuje jej PostCube například
 aplikaci kurýra při založení zásilky.
 
-Aplikaci kurýra stačí [navázat komunikaci s boxem](#komunikace-s-boxem) a
-zapsat klíč tak, jak byl obdržen (bez serializace), [po částech (chunks)]()
-do [charakteristiky zápisu příkazů]() (UUID `13668001-ede0-45de-87e8-77a6c2b8c0b6`).
+Aplikaci kurýra stačí [navázat komunikaci s boxem](#navázání-komunikace-s-boxem) a
+zapsat klíč tak, jak byl obdržen (bez serializace), [po částech (chunks)](#chunkování-packetu)
+do [charakteristiky zápisu příkazů](#vstup-pro-příkazy) (UUID `13668001-ede0-45de-87e8-77a6c2b8c0b6`).
 
 K otevření boxu s binárním klíčem není nutná žádná další část API a dokumentace mimo zmíněných.
 
 Zbytek dokumentace uvádíme pro úplnost. Mimochodem, pod kapotou je binární klíč níže popsaný příkaz
-[Unlock](), předgenerovaný a zašifrovaný.
+[Odemknutí boxu](#odemknutí-boxu), předgenerovaný a zašifrovaný.
 
 *Poznámka: S předgenerovaným klíčem nyní nemá aplikace kurýra jak se dozvědět o případném neúspěchu příkazu (nezná ID
-zašifrovaného příkazu, ke kterému by mohla číst výsledek z [charakteristiky výsledku příkazů]()). Pracujeme na schůdném
-řešení.*
+zašifrovaného příkazu, ke kterému by mohla číst výsledek 
+z [charakteristiky výsledku příkazů](#výstup-výsledku-příkazu)). Pracujeme na schůdném řešení.*
 
 ## Charakteristiky
 Klient zapisuje do a čte z charakteristik boxu příkazy (binární packety) serializované protokolem
-[Protocol Buffers](https://developers.google.com/protocol-buffers/docs/proto3), není-li uvedeno jinak.
+[Protocol Buffers v3](https://developers.google.com/protocol-buffers/docs/proto3), není-li uvedeno jinak.
 
 ### Vstup pro příkazy
 UUID: `13668001-ede0-45de-87e8-77a6c2b8c0b6`
 
 Zajišťuje spuštění příkazu, od otevření boxu po reset do továrního nastavení. Ve společné obálce má [každý příkaz
-vlastní strukturu](#prikazy).
+vlastní strukturu](#příkazy).
 
-Binární příkaz (`Packet`) musí být [šifrovaný](#sifrovani-packetu) a zapisuje
-se [po částech (chunks)](#chunkovani-zpravy), aby mohla být zpráva delší, než limit 20 bajtů.
+Binární příkaz (`Packet`) musí být [šifrovaný](#šifrování-příkazu) a zapisuje
+se [po částech (chunks)](#chunkování-packetu), aby mohla být zpráva delší, než limit 20 bajtů.
 
 Výsledek příkazu je po zapsání a zpracování možné přečíst
-z [další chrakteristiky](#vystup-vysledku-prikazu).
+z [další chrakteristiky](#výstup-výsledku-příkazu).
 
 Příkaz s sebou nese náhodně generované unikátní ID a časovou platnost, aby se box například nedal otevřít starým
 nebo již použitým příkazem.
@@ -155,11 +155,32 @@ Přímá hodnota (není strukturovaná). Obsahuje hash verze firmware (4 bajty).
 ## Šifrování příkazu
 
 ## Chunkování packetu
-První bajt (uint8) = LAST_CHUNK:
-* 0x0 = ještě bude další chunk
-* 0x1 = je to poslední chunk
+Zašifrovaný a serializovaný packet je pole bajtů libovolné délky. Pro zápis do charakteristiky platí omezení
+20 bajtů, proto je nutné rozdělit packet do chunků.
 
-Chunk size = 19 byte
+Struktura chunku:
+* První bajt (uint8) LAST_CHUNK:
+  * 0x00 = ještě bude další chunk
+  * 0x01 = je to poslední chunk
+* Druhý až dvacátý bajt - až devatenáct bajtů chunku packetu
+  * Pro hodnotu se nepoužívá padding, poslední chunk tedy může být kratší než 20 bajtů.
+
+Příklad packetu (73 bajtů):
+```
+debb 4cff 7eac 2802 9c8f dcea fc56 9714
+3ecc c08d 5942 6200 7fd0 7b93 203a 6caa
+3e9b b445 04d5 7781 164b ea41 bf6d 8b2a
+cd0f 5c75 ba67 7651 0684 66ec d043 614f
+ebca 8733 eed9 1a5b 99
+```
+
+Chunky (po nejvýše 20 bajtech včetně LAST_CHUNK na začátku):
+```
+00de bb4c ff7e ac28 029c 8fdc eafc 5697 143e ccc0
+008d 5942 6200 7fd0 7b93 203a 6caa 3e9b b445 04d5
+0077 8116 4bea 41bf 6d8b 2acd 0f5c 75ba 6776 5106
+0184 66ec d043 614f ebca 8733 eed9 1a5b 99
+```
 
 ## Příkazy
 
