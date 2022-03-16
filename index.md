@@ -30,7 +30,8 @@ nainstalujte [doplněk PostCube](https://doplnky.shoptet.cz/postcube) a následu
 Připravujeme možnost integrace pro ostatní platformy přes [PostCube HTTP API](https://docs.postcube.cz/docs/api/).
 
 ## Kurýrní společnosti a dopravci
-Nabídku dopravy integruje PostCube ve svém API jako strana klientská.
+Nabídku dopravy integruje PostCube ve svém API jako strana klientská. Zde je
+[specifikace](https://docs.postcube.cz/docs/kuryri/) všeho, co od Vás budeme pro spolupráci technicky potřebovat.
 
 S dopravcem může být sjednána buď paušální cena, nebo je možné nabízet cenu dynamicky provoláním API kurýra.
 Pro danou dvojici adres nabídne PostCube API svým zákazníkům cenu, kterou uvidí v aplikaci nebo eshopu.

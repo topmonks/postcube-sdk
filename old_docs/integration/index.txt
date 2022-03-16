@@ -1,9 +1,3 @@
----
-title: Integration
-slug: integration
-isSubmenu: true
----
-
 ## Integrace (API)
 
 S ohledem na množství provozovatelů eshopů, platforem a dopravců jsou v PostCube vytvořeny HTTP end-pointy specificky pro každy subjekt zvlášť. Používají stejné nebo podobné funkce interně, ale na venek jsou přizpůsobeny integrované straně.

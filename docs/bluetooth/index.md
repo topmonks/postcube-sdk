@@ -21,11 +21,11 @@ Probíhají přípravy pro další platformy:
 
 ## Navázání komunikace s boxem
 Boxy fungují jako [GATT server](https://www.bluetooth.com/bluetooth-resources/intro-to-bluetooth-gap-gatt/).
-Názvy zařízení začínají vždy názvem `"PostCube "`.
+Názvy zařízení začínají vždy názvem `"PostCube "`, pak typicky následuje ID boxu.
 
 Deklarují službu s UUID:
-* 16-bit `0x8000`,
-* 128-bit `13668000-ede0-45de-87e8-77a6c2b8c0b6`.
+* 16-bit `0x8000` (povinná),
+* 128-bit `13668000-ede0-45de-87e8-77a6c2b8c0b6` (nepovinná).
 
 Zařízení v okolí filtrujte na prefix a deklarovanou službu, například:
 ```
@@ -36,20 +36,48 @@ const device = await navigator.bluetooth.requestDevice({
 });
 ```
 
-## Komunikace s boxem
-Klient zapisuje do charakteristiky boxu binární příkazy šifrované klíčem, který je registrovaný ve vnitřní paměti boxu.
-Jedním z takových příkazů je například odemknutí boxu. Výsledky příkazů čte klient z jiné charakteristiky. 
+## Otevření boxu binárním klíčem
+Binární klíč je předgenerovaný a zašifrovaný příkaz pro konkrétní box k otevření zámku. Poskytuje jej PostCube například
+aplikaci kurýra při založení zásilky.
 
-Charakteristiky jsou omezené velikostí přenesených dat, proto se delší příkazy rozdělují do packetů.
+Aplikaci kurýra stačí [navázat komunikaci s boxem](#komunikace-s-boxem) a
+zapsat klíč tak, jak byl obdržen (bez serializace), [po částech (chunks)]()
+do [charakteristiky zápisu příkazů]() (UUID `13668001-ede0-45de-87e8-77a6c2b8c0b6`).
 
-Packety jsou kódovány protokolem [Protocol Buffers](https://developers.google.com/protocol-buffers/docs/proto3).
+K otevření boxu s binárním klíčem není nutná žádná další část API a dokumentace mimo zmíněných.
 
-### Struktura příkazu
+Zbytek dokumentace uvádíme pro úplnost. Mimochodem, pod kapotou je binární klíč níže popsaný příkaz
+[Unlock](), předgenerovaný a zašifrovaný.
+
+*Poznámka: S předgenerovaným klíčem nyní nemá aplikace kurýra jak se dozvědět o případném neúspěchu příkazu (nezná ID
+zašifrovaného příkazu, ke kterému by mohla číst výsledek z [charakteristiky výsledku příkazů]()). Pracujeme na schůdném
+řešení.*
+
+## Charakteristiky
+Klient zapisuje do a čte z charakteristik boxu příkazy (binární packety) serializované protokolem
+[Protocol Buffers](https://developers.google.com/protocol-buffers/docs/proto3), není-li uvedeno jinak.
+
+### Vstup pro příkazy
+UUID: `13668001-ede0-45de-87e8-77a6c2b8c0b6`
+
+Zajišťuje spuštění příkazu, od otevření boxu po reset do továrního nastavení. Ve společné obálce má [každý příkaz
+vlastní strukturu](#prikazy).
+
+Binární příkaz (`Packet`) musí být [šifrovaný](#sifrovani-packetu) a zapisuje
+se [po částech (chunks)](#chunkovani-zpravy), aby mohla být zpráva delší, než limit 20 bajtů.
+
+Výsledek příkazu je po zapsání a zpracování možné přečíst
+z [další chrakteristiky](#vystup-vysledku-prikazu).
+
+Příkaz s sebou nese náhodně generované unikátní ID a časovou platnost, aby se box například nedal otevřít starým
+nebo již použitým příkazem.
+
+S výjimkou prvotní inicializace boxu (který se odlišuje absencí `encryptionKeyId`) je struktura zašifrované obálky
+`EncryptedPacket`:
 ```
-postcube.EncryptedPacket.hashedSecret   max_size:32 fixed_length:true
-```
+# Options:
+# postcube.EncryptedPacket.hashedSecret   max_size:32 fixed_length:true
 
-```
 syntax = "proto3";
 package postcube;
 
@@ -67,50 +95,79 @@ message Packet {
     Unlock unlock = 5;
     TimeSync timeSync = 6;
     Nuke nuke = 7;
-    Protect protect = 8;
   }
 }
 ```
 
+* **commandId** - vygenerované ID command
+* **encryptionKeyId** - ID použitého šifrovacího klíče (registrovaného s boxem)
+* **payload** - zašifrovaný packet 
+* **hash** - hash zašifrovaného packetu pro ověření
 
-- [(Binary) command encoding](./encoding)
-
-### Šifrování příkazu
-
-### Chunkování packetu
-První bajt (uint8) = HAS_MORE:
-* 0x1 = ještě bude další chunk
-* 0x0 = je to poslední chunk
-
-Chunk size = 19 byte
-
-## Charakteristiky
-
-### Vstup pro příkazy
-UUID: `13668001-ede0-45de-87e8-77a6c2b8c0b6`
-
-### Výstup výsledku příkazů
+### Výstup výsledku příkazu
 UUID: `13668002-ede0-45de-87e8-77a6c2b8c0b6`
+
+```
+message Result {
+  uint32 commandId = 1;
+  uint32 value = 2;
+  uint32 errorCode = 3;
+}
+```
+
+* **commandId** - vygenerované ID command
+* **value** - kód výsledku (tabulka níže), OK je `0x0001`
+* **errorCode** - hardwarový chybový kód (pro účely ladění)
+
+| value    | Význam                                               |
+|----------|------------------------------------------------------|
+| `0x0001` | Příkaz byl úspěšný                                   |
+|          | *Ostatní kódy jsou vždy chyba, příkaz se nevykonal:* |
+| `0x0002` | Příkaz není podporovaný zařízením                    |
+| `0x0003` | Platnost příkazu vypršela                            |
+| `0x0004` | Příkaz již byl dříve použit                          |
+| `0x0005` | Neplatné ID příkazu                                  |
+| `0x0006` | Použitý šifrovací klíč je již neplatný               |
+| `0x01**` | *Chyba inicializace boxu (SetKey)*                   |
+| `0x0101` | Platnost zapisovaného klíče již vypršela             |
+| `0x0102` | Zapisovaný klíč je neplatný nebo poškozený           |
+| `0x02**` | *Chyba otevření boxu (Unlock)*                       |
+| `0x0201` | Uvedené číslo šifrovacího klíče není registrované    |
+| `0x1***` | *Obecná systémová chyba*                             |
+| `0x11**` | *Systémová chyba paměti boxu*                        |
+| `0x12**` | *Systémová chyba vykonání příkazu*                   |
+| `0x13**` | *Systémová chyba zápisu šifrovacích klíčů*           |
+| `0x14**` | *Systémová chyba otevření boxu*                      |
+| `0x15**` | *Systémová chyba synchronizace času*                 |
 
 ### Stav dvířek boxu
 UUID: `13668003-ede0-45de-87e8-77a6c2b8c0b6`
 
-0 - zavřeno
-1 - otevřeno
+Přímá hodnota (není strukturovaná):
+* `0x0000` - zavřeno
+* `0x0001` - otevřeno
 
 ### Verze firmware
 UUID: `13668004-ede0-45de-87e8-77a6c2b8c0b6`
 
-Obsahuje hash verze firmware (7 bajtů).
+Přímá hodnota (není strukturovaná). Obsahuje hash verze firmware (4 bajty).
+
+## Šifrování příkazu
+
+## Chunkování packetu
+První bajt (uint8) = LAST_CHUNK:
+* 0x0 = ještě bude další chunk
+* 0x1 = je to poslední chunk
+
+Chunk size = 19 byte
 
 ## Příkazy
 
-### Inicializace boxu
+### Inicializace boxu / Registrace klíče s boxem
 ```
-postcube.SetKey.publicKey               max_size:64 fixed_length:true
-```
+# Options:
+# postcube.SetKey.publicKey               max_size:64 fixed_length:true
 
-```
 message SetKey {
   uint32 keyIndex = 1;
   bytes publicKey = 2;
@@ -118,30 +175,27 @@ message SetKey {
 }
 ```
 
-### Registrace klíče s boxem
-```
-postcube.SetKey.publicKey               max_size:64 fixed_length:true
-```
+* **keyIndex** - do kterého indexu se má klíč registrovat
+* **publicKey** - veřejný klíč
+* **expireAt** - datum a čas expirace klíče
 
-```
-message SetKey {
-  uint32 keyIndex = 1;
-  bytes publicKey = 2;
-  uint32 expireAt = 3;
-}
-```
+#### Inicializace boxu v továrním nastavení
+Majitel si připraví PIN (uint32). Box má svoje boxId (uint32).
 
+SetKey - nešifrovaný packet s hashedSecret sha256(boxId+PIN) = 32 byte bez `encryptedKeyId` v obálce.
+
+Od teď je zaregistrovaný první klíč a veškerá další komunikace musí být šifrovaná registrovaným klíčem.
 
 ### Odemknutí boxu
-lockId = číslo zámku v multiboxu (až 10 lockId 0-9)
 ```
 message Unlock {
   uint32 lockId = 1;
 }
 ```
 
-### Reset boxu
-Majitel může resetovat box do továrního nastavení.
+* **lockId** - číslo zámku v multiboxu (`0x0000`-`0x0009`)
+
+### Reset boxu do továrního nastavení
 ```
 message Nuke {
 }
@@ -155,79 +209,4 @@ message TimeSync {
 }
 ```
 
-### Čtení výsledku boxu
-commandId - vygenerované ID command
-value - náš error kód - https://github.com/topmonks/postcube/blob/master/firmware/multibox/application/errors.h
-errorCode - interní error kód (pro debug)
-
-```
-message Result {
-  uint32 commandId = 1;
-  uint32 value = 2;
-  uint32 errorCode = 3;
-}
-```
-
-## Scénáře použití
-
-### Majitel si poprvé nastavuje box
-1. Majitel si připraví PIN
-2. SetKey - pošle nešifrovaný packet s hashedSecret sha256(boxId::uint32+PIN::uint32)::32byte bez encryptedKeyId
-3. Teď už je tedy zaregistrovaný první klíč a veškerá další komunikace musí být šifrovaná registrovaným 
-
-### Kurýr odemyká box pro vyzvednutí/doručení
-1. 
-2. 
-3. 
-4. 
-5. 
-6. 
-
-
-<br/><br/><br/><br/><br/>
-
-# To Be Discarded:
-
-## Supported platforms
-
-### Web
-
-Web adapter is using [Web Bluetooth](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API) under the hood.
-
-#### Use Web adapter
-```typescript
-import { Cubes, Platform } from '@topmonks/postcube'
-
-Cubes.platform = Platform.web
-```
-
-
-### Capacitor / Web
-
-Capacitor adapter is using Capacitor community's [bluetooth-le](https://github.com/capacitor-community/bluetooth-le) under the hood. This plugin supports also web and hence can be used for both mobile and web. If you intend to use Cubes API on mobile devices, be sure to install and setup the plugin in your Capacitor app - see [installation instructions](https://github.com/capacitor-community/bluetooth-le#installation).
-
-There should be little to no config needed for Android, you will however have to setup Bluetooth permissions for iOS.
-
-#### Use Capacitor adapter
-```typescript
-import { Cubes, Platform } from '@topmonks/postcube'
-
-Cubes.platform = Platform.capacitor
-```
-
-
-### Node.js
-
-Cubes bluetooth API for Node.js is using [`noble`](https://github.com/abandonware/noble) under the hood.
-
-#### Use Node.js adapter
-```typescript
-import { Cubes, Platform } from '@topmonks/postcube'
-
-Cubes.platform = Platform.node
-```
-
-#### Prerequisites
-
-You need to make sure to install all necessary dependencies based on your host system. See [https://github.com/abandonware/noble#prerequisites](https://github.com/abandonware/noble#prerequisites) for details.
-
+* **timestamp** - datum a čas, na který se mají hodiny nastavit
