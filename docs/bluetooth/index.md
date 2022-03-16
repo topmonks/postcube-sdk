@@ -99,7 +99,7 @@ message Packet {
 }
 ```
 
-* **commandId** - vygenerované ID command
+* **commandId** - vygenerované UUID příkazu
 * **encryptionKeyId** - ID použitého šifrovacího klíče (registrovaného s boxem)
 * **payload** - zašifrovaný packet 
 * **hash** - hash zašifrovaného packetu pro ověření
@@ -153,9 +153,38 @@ UUID: `13668004-ede0-45de-87e8-77a6c2b8c0b6`
 Přímá hodnota (není strukturovaná). Obsahuje hash verze firmware (4 bajty).
 
 ## Šifrování příkazu
+Serializovaný packet je sekvence bajtů libovolné délky.
+
+Pro šifrování packetu se používá [ChaCha20-Poly1305](https://datatracker.ietf.org/doc/html/rfc7539). Vstupem
+jsou privátní klíč (majitele boxu), zpráva k zašifrování a 12-byte nonce. Výstupem je zašifrovaná zpráva (`payload`)
+a hash pro ověření (`hash`).
+
+Klíče jsou založené na eliptických křivkách (secp256r1). Veřejná část klíče musí být
+[registrována v boxu](#inicializace-boxu--registrace-klíče-s-boxem) pod `encryptionKeyId`.
+Privátní klíč je uložen na zařízení majitele boxu.
+
+```
+# Options:
+# postcube.EncryptedPacket.hashedSecret   max_size:32 fixed_length:true
+
+syntax = "proto3";
+package postcube;
+
+message EncryptedPacket {
+  uint32 commandId = 1;
+  uint32 encryptionKeyId = 2;
+  bytes payload = 3;
+  bytes hash = 4;
+}
+```
+
+* **commandId** - vygenerované UUID příkazu
+* **encryptionKeyId** - ID použitého šifrovacího klíče (registrovaného s boxem)
+* **payload** - zašifrovaný packet
+* **hash** - hash zašifrovaného packetu pro ověření
 
 ## Chunkování packetu
-Zašifrovaný a serializovaný packet je pole bajtů libovolné délky. Pro zápis do charakteristiky platí omezení
+Zašifrovaný a serializovaný packet je sekvence bajtů libovolné délky. Pro zápis do charakteristiky platí omezení
 20 bajtů, proto je nutné rozdělit packet do chunků.
 
 Struktura chunku:
