@@ -12,12 +12,12 @@ Zapisuje a čte data v charakteristikách služby. Bezpečnost komunikace je ře
 Legacy pairing ani LE Secure Connection se pro svou komplikovanost nevyužívá.
 
 Jako hotové implementace protokolu PostCube je možné využít SDK pro platformy:
-* Webový prohlížeč - [PostCube Web SDK](https://docs.postcube.cz/docs/sdk/web.html)
-* Node.js - [PostCube Node.js SDK](https://docs.postcube.cz/docs/sdk/node.html)
+* Webový prohlížeč - [PostCube Web SDK](/docs/sdk/web.html)
+* Node.js - [PostCube Node.js SDK](/docs/sdk/node.html)
 
 Probíhají přípravy pro další platformy:
-* Nativní Android - [PostCube Android SDK](https://docs.postcube.cz/docs/sdk/android.html)
-* Nativní iOS - [PostCube iOS SDK](https://docs.postcube.cz/docs/sdk/ios.html)
+* Nativní Android - [PostCube Android SDK](/docs/sdk/android.html)
+* Nativní iOS - [PostCube iOS SDK](/docs/sdk/ios.html)
 
 ## Navázání komunikace s boxem
 Boxy fungují jako [GATT server](https://www.bluetooth.com/bluetooth-resources/intro-to-bluetooth-gap-gatt/).

@@ -60,4 +60,4 @@ s očekávanou odpovědí:
 ```
 
 Údaj podobný `offerUuid` nebo `type` bychom pak použili při volání
-[API pro objednání zásilky](https://docs.postcube.cz/docs/kuryri/zasilky.html).
+[API pro objednání zásilky](/docs/kuryri/zasilky.html).
