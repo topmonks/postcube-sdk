@@ -49,9 +49,25 @@ K otevření boxu s binárním klíčem není nutná žádná další část API
 Zbytek dokumentace uvádíme pro úplnost. Mimochodem, pod kapotou je binární klíč níže popsaný příkaz
 [Odemknutí boxu](#odemknutí-boxu), předgenerovaný a zašifrovaný.
 
-*Poznámka: S předgenerovaným klíčem nyní nemá aplikace kurýra jak se dozvědět o případném neúspěchu příkazu (nezná ID
-zašifrovaného příkazu, ke kterému by mohla číst výsledek 
-z [charakteristiky výsledku příkazů](#výstup-výsledku-příkazu)). Pracujeme na schůdném řešení.*
+Pokud bude aplikace kurýra potřebovat číst výsledek příkazu (zda se podařil), je možné deserializovat binární klíč
+s [Protocol Buffers v3](https://developers.google.com/protocol-buffers/docs/proto3) strukturou `EncryptedPacket`:
+```
+# Options:
+# postcube.EncryptedPacket.hashedSecret   max_size:32 fixed_length:true
+
+syntax = "proto3";
+package postcube;
+
+message EncryptedPacket {
+  uint32 commandId = 1;
+  uint32 encryptionKeyId = 2;
+  bytes payload = 3;
+  bytes hash = 4;
+}
+```
+
+Vlastnost `commandId`, tedy ID příkazu pro box, je možné použít pro přečtení výsledku
+z [charakteristiky výsledku příkazů](#výstup-výsledku-příkazu) (UUID `13668002-ede0-45de-87e8-77a6c2b8c0b6`).
 
 ## Charakteristiky
 Klient zapisuje do a čte z charakteristik boxu příkazy (binární packety) serializované protokolem
