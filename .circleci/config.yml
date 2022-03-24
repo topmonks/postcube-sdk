@@ -66,7 +66,7 @@ jobs:
           command: npm run build:node
       - run:
           name: Emptify react.module.js, apiBLE/postcube.web.js and apiBLE/postcube.capacitor.js CJS
-          command: cat /dev/null > build/cjs/react.module.js cat /dev/null > build/cjs/apiBLE/postcube.web.js && cat /dev/null > build/cjs/apiBLE/postcube.capacitor.js
+          command: cat /dev/null > build/cjs/react.module.js && cat /dev/null > build/cjs/apiBLE/postcube.web.js && cat /dev/null > build/cjs/apiBLE/postcube.capacitor.js
       - run:
           name: Create .npmrc file
           command: cd build && echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
