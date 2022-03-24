@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 source "https://rubygems.org"
 # Hello! This is where you manage which Jekyll version is used to run.
 # When you want to use a different version, change it below, save the
@@ -6,6 +8,8 @@ source "https://rubygems.org"
 #     bundle exec jekyll serve
 
 
+
+# git_source(:github) { |repo_name| "https://github.com/#{repo_name}" }
 
 # gem "jekyll", "~> 4.2.1"
 # If you want to use GitHub Pages, remove the "gem "jekyll"" above and
@@ -30,3 +34,4 @@ gem "wdm", "~> 0.1.1", :platforms => [:mingw, :x64_mingw, :mswin]
 
 
 gem "webrick", "~> 1.7"
+gem 'jemoji'

@@ -26,10 +26,10 @@ import * as postcubeNode from './postcube.node'
 const platformMap: {
     [platform in Platform]: any
 } = {
-    [Platform.web]: postcubeWeb,
+    [Platform.web]:       postcubeWeb,
     [Platform.capacitor]: postcubeCapacitor,
-    [Platform.node]: postcubeNode,
-    [Platform.mock]: postcubeMock,
+    [Platform.node]:      postcubeNode,
+    [Platform.mock]:      postcubeMock,
 }
 
 export interface PostCubeBLE {
@@ -39,8 +39,8 @@ export interface PostCubeBLE {
     platform: Platform
 
     isEnabled(): Promise<boolean>
-    requestPostCube(namePrefix: string): Promise<PostCube>
-    scanForPostCubes(options?: ScanOptions): Promise<ScanResult>
+    requestPostCube(namePrefix: string, mockConfig?: PostCubeMockConfig): Promise<PostCube>
+    scanForPostCubes(options?: ScanOptions, mockConfig?: PostCubeMockConfig): Promise<ScanResult>
 }
 
 const isEnabled = async(): Promise<boolean> => {

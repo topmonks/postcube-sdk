@@ -1,8 +1,8 @@
 
 export const PACKET_SIZE                = 20
 export const PACKET_LAST_INDEX          = 0x0
-export const PACKET_LAST_TRUE           = 0x0
-export const PACKET_LAST_FALSE          = 0x1
+export const PACKET_LAST_TRUE           = 0x1
+export const PACKET_LAST_FALSE          = 0x0
 export const COMMAND_ID_SIZE            = 4 // bytes = 32bit uint
 export const DEFAULT_TIMEOUT_CONNECT    = 7000
 export const DEFAULT_TIMEOUT_DISCONNECT = 3000

@@ -79,12 +79,12 @@ export const parsePostCubeName = (name: string): {
 export const doISeriouslyHaveToUseSubtleCrypto = () => {
     return (
         typeof window !== 'undefined'
-        && typeof window?.crypto?.getRandomValues === 'function'
-        && typeof window?.crypto?.subtle?.digest === 'function'
+        && typeof window?.crypto?.getRandomValues     === 'function'
+        && typeof window?.crypto?.subtle?.digest      === 'function'
         && typeof window?.crypto?.subtle?.generateKey === 'function'
-        && typeof window?.crypto?.subtle?.encrypt === 'function'
-        && typeof window?.crypto?.subtle?.deriveBits === 'function'
-        && typeof window?.crypto?.subtle?.importKey === 'function'
-        && typeof window?.crypto?.subtle?.exportKey === 'function'
+        && typeof window?.crypto?.subtle?.encrypt     === 'function'
+        && typeof window?.crypto?.subtle?.deriveBits  === 'function'
+        && typeof window?.crypto?.subtle?.importKey   === 'function'
+        && typeof window?.crypto?.subtle?.exportKey   === 'function'
     )
 }

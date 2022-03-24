@@ -1,5 +1,6 @@
 
-title: Postcube Docs
+title: PostCube
+longtitle: PostCube Docs
 description: >-
   Postcube public API documentation.
 author:
@@ -7,26 +8,64 @@ author:
   email: info@postcube.cz
   website: https://postcube.cz
 
-baseurl: ""
-url: ""
+version: 1.0
+gitbook_version: 3.2.3
+
+url: 'https://docs.postcube.cz'
+baseurl: ''
 port: 4001
 
+toc:
+  enabled: true
+  h_min: 1
+  h_max: 2
 
 sass:
   sass_dir: _sass
-  style: compact # nested / expanded / compact / compressed
-# plugins:
-#   - 
+  style: compact # nested/expanded/compact/compressed
 
+markdown: kramdown
+kramdown:
+  auto_ids: true
+  input: GFM
+  math_engine: mathjax
+  smart_quotes: lsquo,rsquo,ldquo,rdquo
+  toc_levels: 1..6
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    guess_lang: true
+
+syntax_highlighter_style: pastie
+
+markdown_ext: markdown,mkdown,mkdn,mkd,md
+
+# permalink: /:categories/:year-:month-:day-:title:output_ext
 
 exclude:
+  - _drafts
   - .sass-cache/
   - .jekyll-cache/
   - gemfiles/
   - Gemfile
   - Gemfile.lock
+  - examples/
+  - build/
   - node_modules/
   - vendor/bundle/
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+
+collections:
+  docs:
+    output: true
+
+destination: ./_site
+incremental: false
+regenerate: true
+
+plugins:
+  - jekyll-feed
+  - jemoji
+
+

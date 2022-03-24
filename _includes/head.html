@@ -1,13 +1,46 @@
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
 
-    <!-- <link rel="stylesheet" href="{{ "/assets/styles/main.css" | relative_url }}"> -->
-    <link rel="stylesheet" href="{{ "/assets/styles/light.css" | relative_url }}">
-    <link rel="stylesheet" media="(prefers-color-scheme: light)" href="{{ "/assets/styles/light.css" | relative_url }}">
-    <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="{{ "/assets/styles/dark.css" | relative_url }}">
+{%- if page.title -%}
+    <title>{{ page.title | escape }} · {{ site.title | escape }}</title>
+{%- else -%}
+    <title>{{ site.title | escape }}</title>
+{%- endif -%}
 
-    <script type="module" src="https://unpkg.com/dark-mode-toggle"></script>
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-</head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="description" content="{{site.description}}">
+
+{%- if site.gitbook_version -%}
+    <meta name="generator" content="Jekyll (using style of GitBook {{ site.gitbook_version | escape }})">
+{%- else -%}
+    <meta name="generator" content="Jekyll (using style of GitBook)">
+{%- endif -%}
+
+{%- if site.author -%}
+    <meta name="author" content="{{ site.author | escape }}">
+{%- endif -%}
+
+<link rel="stylesheet" href="{{site.baseurl}}/assets/style.css">
+<link rel="stylesheet" href="{{site.baseurl}}/assets/gitbook-plugin-fontsettings/website.css">
+<link rel="stylesheet" href="{{site.baseurl}}/assets/gitbook-plugin-search-pro/search.css">
+<link rel="stylesheet" href="{{site.baseurl}}/assets/gitbook-plugin-back-to-top-button/plugin.css">
+
+<link rel="stylesheet" href="{{site.baseurl}}/assets/rouge/{{ site.syntax_highlighter_style }}.css">
+
+<meta name="HandheldFriendly" content="true"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="{{site.baseurl}}/assets/images/apple-touch-icon-precomposed-152.png">
+<link rel="shortcut icon" href="{{site.baseurl}}/assets/images/favicon.ico" type="image/x-icon">
+
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']]
+        },
+        svg: {
+            fontCache: 'global'
+        }
+    };
+</script>

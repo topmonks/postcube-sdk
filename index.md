@@ -1,6 +1,5 @@
 ---
-layout: landing
-title: PostCube
+layout: home
 ---
 
 # PostCube
@@ -27,16 +26,16 @@ umět pracovat i s doručením z/do PostCube boxu podle jeho ID.
 Pokud Váš eshop běží na platformě [Shoptet](https://www.shoptet.cz),
 nainstalujte [doplněk PostCube](https://doplnky.shoptet.cz/postcube) a následujte instrukce.
 
-Připravujeme možnost integrace pro ostatní platformy přes [PostCube HTTP API](https://docs.postcube.cz/docs/api/).
+Připravujeme možnost integrace pro ostatní platformy přes [PostCube HTTP API](/docs/bluetooth).
 
 ## Kurýrní společnosti a dopravci
 Nabídku dopravy integruje PostCube ve svém API jako strana klientská. Zde je
-[specifikace](https://docs.postcube.cz/docs/kuryri/) všeho, co od Vás budeme pro spolupráci technicky potřebovat.
+[specifikace](/docs/kuryri) všeho, co od Vás budeme pro spolupráci technicky potřebovat.
 
 S dopravcem může být sjednána buď paušální cena, nebo je možné nabízet cenu dynamicky provoláním API kurýra.
 Pro danou dvojici adres nabídne PostCube API svým zákazníkům cenu, kterou uvidí v aplikaci nebo eshopu.
 
-PostCube umožňuje kurýrům otevřít boxy k zásilce a to buď [odkazem](https://docs.postcube.cz/docs/kuryri/odkaz.html),
-nebo [binárním klíčem](https://docs.postcube.cz/docs/kuryri/klic.html). Záleží na tom, zda kurýr má k dispozici pouze
+PostCube umožňuje kurýrům otevřít boxy k zásilce a to buď [odkazem](/docs/kuryri#odkaz-pro-otevření-boxu),
+nebo [binárním klíčem](/docs/kuryri#klíč-pro-otevření-boxu). Záleží na tom, zda kurýr má k dispozici pouze
 prohlížeč v mobilu, nebo (nativní či webovou) aplikaci společnosti pro kterou doručuje.
 
