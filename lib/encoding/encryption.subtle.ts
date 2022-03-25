@@ -3,7 +3,6 @@ import type { EncryptionKeys } from './encryption'
 import {
     NONCE,
 } from '../constants/bluetooth'
-import { rfc5915KeyAsn, pkcs8KeyAsn } from '../constants/encoding'
 import { sanitizePublicKey } from '../helpers'
 import { hashSharedSecret } from './hash'
 
@@ -13,12 +12,12 @@ const parsePrivateSubtleCryptoKey = async(privateKey: Iterable<number>, publicKe
         namedCurve: 'P-256',
     }
 
-    const pkcs8KeyBuffer = await parseRawPrivateKey(
+    const privateKeyData = await parseRawPrivateKeyData(
         new Uint8Array(privateKey),
         new Uint8Array(publicKey),
     )
 
-    return await window.crypto.subtle.importKey('pkcs8', pkcs8KeyBuffer, algorithm, true, [ 'encrypt', 'decrypt', 'deriveKey', 'deriveBits' ])
+    return await window.crypto.subtle.importKey('jwk', privateKeyData, algorithm, true, [ 'encrypt', 'decrypt', 'deriveKey', 'deriveBits' ])
 }
 
 const parsePublicSubtleCryptoKey = async(data: Uint8Array|number[]) => {
@@ -31,33 +30,23 @@ const parsePublicSubtleCryptoKey = async(data: Uint8Array|number[]) => {
     return await window.crypto.subtle.importKey('raw', keyBuffer, algorithm, true, [ 'encrypt', 'decrypt', 'deriveKey', 'deriveBits' ])
 }
 
-const parsePkcs8PrivateKey = (pkcs8KeyBuffer: ArrayBuffer): Uint8Array => {
-    const decodedKey = pkcs8KeyAsn.decode(Buffer.from(pkcs8KeyBuffer), 'der')
-    const { privateKey } = rfc5915KeyAsn.decode(decodedKey.privateKey, 'der')
+const parseRawPrivateKeyData = (privateKeyBuffer: Uint8Array, publicKeyBuffer: Uint8Array) => {
+    const privateKeyBase64 = Buffer.from(privateKeyBuffer).toString('base64url')
 
-    return new Uint8Array(privateKey)
-}
+    const _publicKeyBuffer = sanitizePublicKey(publicKeyBuffer)
 
-const parseRawPrivateKey = (privateKeyBuffer: Uint8Array, publicKeyBuffer: Uint8Array): ArrayBuffer => {
-    const encodedRfc5915Key = rfc5915KeyAsn.encode({
-        version: 1,
-        privateKey: Buffer.from(privateKeyBuffer),
-        publicKey: {
-            unused: 0,
-            data: Buffer.from(publicKeyBuffer),
-        },
-    })
+    const x = Buffer.from(_publicKeyBuffer.slice(0, 32))
+    const y = Buffer.from(_publicKeyBuffer.slice(32, 64))
 
-    const pkcs8KeyBuffer = pkcs8KeyAsn.encode({
-        version: 0,
-        algorithmIdentifier: {
-            privateKeyType: 'EC',
-            parameters: 'prime256v1',
-        },
-        privateKey: Buffer.from(encodedRfc5915Key),
-    })
-
-    return new Uint8Array(pkcs8KeyBuffer)
+    return {
+        kty: 'EC',
+        crv: 'P-256',
+        key_ops: [ 'deriveKey', 'deriveBits' ],
+        ext: true,
+        d: privateKeyBase64,
+        x: x.toString('base64url'),
+        y: y.toString('base64url'),
+    }
 }
 
 export const generateKeyPair = async(): Promise<{
@@ -69,8 +58,8 @@ export const generateKeyPair = async(): Promise<{
         namedCurve: 'P-256',
     }, true, [ 'deriveKey', 'deriveBits' ])
 
-    const privateKeyPkcs8 = await window.crypto.subtle.exportKey('pkcs8', cryptoKeyPair.privateKey)
-    const privateKey = await parsePkcs8PrivateKey(privateKeyPkcs8)
+    const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', cryptoKeyPair.privateKey)
+    const privateKey = new Uint8Array(Buffer.from(privateKeyJwk.d, 'base64url'))
 
     const publicKeyBuffer = await window.crypto.subtle.exportKey('raw', cryptoKeyPair.publicKey)
     const publicKey = await sanitizePublicKey(new Uint8Array(publicKeyBuffer))
