@@ -44,6 +44,7 @@
     "jsignal": "^2.5.0",
     "lodash": "^4.17.21",
     "node-fetch": "^3.1.0",
+    "npm": "^8.5.5",
     "pbjs": "0.0.14"
   },
   "devDependencies": {
