@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-source scripts/setup_shell.sh
+. scripts/setup_shell.sh
 
 if [[ "$DEBUG_SKIP_NPM_INSTALL" != "1" ]]; then
     npm install
