@@ -1,4 +1,6 @@
 
+import { Buffer } from 'buffer'
+
 import type { EncryptionKeys } from './encryption'
 import {
     NONCE,

@@ -1,6 +1,5 @@
 
-import { EventEmitter } from 'events'
-import { Listener } from 'jsignal'
+import { jSignal, Listener } from 'jsignal'
 
 import * as protocol from '../protocol.pb'
 import { PostCubeLogger } from '../logger'
@@ -10,6 +9,11 @@ import {
     CHAR_RESULT_UUID,
     RES_OK,
     RESPONSE_MESSAGES,
+    SERVICE_BATTERY_UUID,
+    CHAR_BATTERY_LEVEL_UUID,
+    SERVICE_UUID_16,
+    CHAR_CONTROL_UUID_16,
+    CHAR_RESULT_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
 import { parsePostCubeName } from '../helpers'
@@ -37,10 +41,13 @@ export interface ScanResult {
     stopScan(): void
 }
 
-export abstract class PostCube extends EventEmitter {
+export abstract class PostCube {
     static EncryptionKeys: {
         [postCubeId: string]: NonNullable<EncryptionKeys>
     } = {}
+
+    readonly onChange: jSignal<PostCube> = new jSignal<PostCube>()
+    readonly onResult: jSignal<DataView> = new jSignal<DataView>()
 
     readonly id: string
     readonly name: string
@@ -50,8 +57,6 @@ export abstract class PostCube extends EventEmitter {
     abstract readonly isConnected: boolean
 
     constructor(name: string) {
-        super()
-
         const { id, isDev } = parsePostCubeName(name)
 
         this.id = id
@@ -73,20 +78,31 @@ export abstract class PostCube extends EventEmitter {
 
     setKeyIndex(keyIndex: number|null): void {
         (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).keyIndex = keyIndex
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     setPublicKey(publicKey: Uint8Array|number[]|null): void {
         (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).publicKey = publicKey
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     setPrivateKey(privateKey: Uint8Array|number[]|null): void {
         (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).privateKey = privateKey
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async readBattery(): Promise<number> {
+        throw bleErrors.notSupported('Not right now... too lazy for that :D try some time later.. maybe')
+
+        // PostCubeLogger.debug(`readBattery from PostCube (ID: ${this.id})`)
+
+        // // const batteryValue = await this.read(SERVICE_BATTERY_UUID, CHAR_BATTERY_LEVEL_UUID)
+        // const batteryValue = await this.read('battery_service', 'battery_level')
+        // console.log('batteryValue:', batteryValue)
+
         return 0
     }
 
@@ -98,8 +114,8 @@ export abstract class PostCube extends EventEmitter {
         PostCubeLogger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
 
         for (const index in chunks) {
-            await this.write(SERVICE_UUID, CHAR_CONTROL_UUID, chunks[index])
-            PostCubeLogger.log(`Packet ${index + 1}/${chunks.length} has been sent`)
+            await this.write(SERVICE_UUID_16, CHAR_CONTROL_UUID_16, chunks[index])
+            PostCubeLogger.log(`Packet ${Number(index) + 1}/${chunks.length} has been sent`)
         }
     }
 
@@ -130,7 +146,7 @@ export abstract class PostCube extends EventEmitter {
             }
 
             try {
-                stopNotifications = await this.listenForNotifications(SERVICE_UUID, CHAR_RESULT_UUID, handleNotification)
+                stopNotifications = await this.listenForNotifications(SERVICE_UUID_16, CHAR_RESULT_UUID_16, handleNotification)
 
                 await this.writeCommand(command)
             } catch (err) {
@@ -232,38 +248,21 @@ export abstract class PostCube extends EventEmitter {
     abstract disconnect(timeoutMs?: number): Promise<void>
 
     abstract read(
-        serviceUUID: string,
-        characteristicUUID: string,
+        serviceUUID: string|number,
+        characteristicUUID: string|number,
         timeoutMs?: number,
     ): Promise<DataView>
     abstract write(
-        serviceUUID: string,
-        characteristicUUID: string,
+        serviceUUID: string|number,
+        characteristicUUID: string|number,
         value: DataView,
         timeoutMs?: number,
     ): Promise<void>
 
     abstract listenForNotifications(
-        serviceUUID: string,
-        characteristicUUID: string,
+        serviceUUID: string|number,
+        characteristicUUID: string|number,
         listener: Listener<DataView>,
         timeoutMs?: number,
     ): Promise<StopNotifications>
-}
-
-export declare interface PostCube {
-    addListener(event: 'change', listener: EventChangeListener)
-    addListener(event: 'result', listener: EventResultListener)
-
-    removeListener(event: 'change', listener: EventChangeListener)
-    removeListener(event: 'result', listener: EventResultListener)
-
-    on(event: 'change', listener: EventChangeListener)
-    on(event: 'result', listener: EventResultListener)
-
-    once(event: 'change', listener: EventChangeListener)
-    once(event: 'result', listener: EventResultListener)
-
-    emit(event: 'change', postCube: PostCube)
-    emit(event: 'result', value: DataView)
 }

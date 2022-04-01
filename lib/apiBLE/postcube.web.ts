@@ -9,6 +9,7 @@ import {
     DEFAULT_TIMEOUT_LISTEN,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
+    SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
 import {
@@ -17,6 +18,10 @@ import {
     ScanResult,
     StopNotifications,
 } from './postcube'
+
+export const getServiceUUID = (): number => {
+    return SERVICE_UUID_16
+}
 
 export const isEnabled = async(): Promise<boolean> => {
     return (
@@ -27,23 +32,27 @@ export const isEnabled = async(): Promise<boolean> => {
 
 export const requestPostCube = async(
     namePrefix: string,
-    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
 ): Promise<PostCube> => {
-    const device = await navigator.bluetooth.requestDevice({
+    const requestDeviceOptions = {
         acceptAllDevices: false,
         optionalServices: services,
         filters: [{
             namePrefix,
             // services: [],
         }],
-    })
+    }
+
+    PostCubeLogger.debug(requestDeviceOptions, `Request device options [${PostCubeWeb.PlatformName}]`)
+
+    const device = await navigator.bluetooth.requestDevice(requestDeviceOptions)
 
     return new PostCubeWeb(device)
 }
 
 export const scanForPostCubes = async(
     options: ScanOptions = {},
-    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
 ): Promise<ScanResult> => {
     return {
         async stopScan() {},
@@ -56,6 +65,8 @@ export const scanForPostCubes = async(
 }
 
 export class PostCubeWeb extends PostCube {
+    static PlatformName = 'WebBluetooth'
+
     readonly device: BluetoothDevice
     gattServer: BluetoothRemoteGATTServer
 
@@ -64,7 +75,7 @@ export class PostCubeWeb extends PostCube {
     }
 
     get isConnected(): boolean {
-        return !!this.gattServer?.connected
+        return !!this.gattServer?.connected || !!this.gattServer?.device?.gatt?.connected
     }
 
     constructor(device: BluetoothDevice) {
@@ -83,41 +94,40 @@ export class PostCubeWeb extends PostCube {
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
 
-        let timeout, isConnected = false
+        let timeout
         if (timeoutMs) {
             timeout = setTimeout(() => {
-                if (isConnected) {
+                if (this.isConnected) {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [WebBluetooth]`)
+                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
             }, timeoutMs)
         }
 
         this.gattServer = await this.gattServer.connect()
 
-        isConnected = true
         if (timeout) {
             clearTimeout(timeout)
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
 
-        let timeout, isDisconnected = false
+        let timeout
         if (timeoutMs) {
             timeout = setTimeout(() => {
-                if (isDisconnected) {
+                if (!this.isConnected) {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [WebBluetooth]`)
+                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -126,13 +136,12 @@ export class PostCubeWeb extends PostCube {
         }
 
         this.gattServer = null
-        isDisconnected = true
         if (timeout) {
             clearTimeout(timeout)
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
     }
 
     async read(
@@ -140,7 +149,7 @@ export class PostCubeWeb extends PostCube {
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<DataView> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
 
         let timeout, isDone = false
         if (timeoutMs) {
@@ -149,7 +158,7 @@ export class PostCubeWeb extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [WebBluetooth]`)
+                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -171,7 +180,7 @@ export class PostCubeWeb extends PostCube {
         value: DataView,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<void> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [WebBluetooth]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
 
         let timeout, isDone = false
         if (timeoutMs) {
@@ -180,7 +189,7 @@ export class PostCubeWeb extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [WebBluetooth]`)
+                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -202,7 +211,7 @@ export class PostCubeWeb extends PostCube {
     ): Promise<StopNotifications> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Listening for value change on PostCube (ID: ${this.id}) [WebBluetooth]`,
+            `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`,
         )
 
         let timeout, isListening = true
@@ -213,7 +222,7 @@ export class PostCubeWeb extends PostCube {
                 }
 
                 stopListening()
-                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [WebBluetooth]`)
+                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -229,7 +238,7 @@ export class PostCubeWeb extends PostCube {
         const stopListening = () => {
             PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
-                `Stopped listening for value change on PostCube (ID: ${this.id}) [WebBluetooth]`,
+                `Stopped listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`,
             )
 
             isListening = false

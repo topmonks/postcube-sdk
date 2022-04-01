@@ -1,4 +1,5 @@
 
+import { Buffer } from 'buffer'
 
 import { doISeriouslyHaveToUseSubtleCrypto } from '../helpers'
 import {

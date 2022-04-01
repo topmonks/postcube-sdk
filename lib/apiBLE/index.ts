@@ -7,12 +7,12 @@ export {
 export type {
     PostCubeMockConfig,
     MockDeviceConfig,
-} from './postcube.mock'
+} from './mock'
 export {
     requestPostCube as requestPostCubeMock,
     scanForPostCubes as scanForPostCubesMock,
     postCubeMockConfig,
-} from './postcube.mock'
+} from './mock'
 
 export type {
     ScanOptions,

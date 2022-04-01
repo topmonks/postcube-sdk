@@ -1,0 +1,27 @@
+{
+  "name": "ble-debugger-web",
+  "version": "0.0.1",
+  "description": "PostCube BLE debugger",
+  "author": "TopMonks",
+  "license": "MIT",
+  "scripts": {
+    "start": "snowpack dev --polyfill-node",
+    "build": "snowpack build --polyfill-node"
+  },
+  "devDependencies": {
+    "@snowpack/plugin-postcss": "^1.4.3",
+    "@snowpack/plugin-react-refresh": "^2.5.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.4",
+    "snowpack": "^3.8.8",
+    "tailwindcss": "^2.2.19"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.4.2",
+    "classnames": "^2.3.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  }
+}

@@ -1,4 +1,5 @@
 
+import { Buffer } from 'buffer'
 import { Listener } from 'jsignal'
 import type * as noble from '@abandonware/noble'
 
@@ -10,6 +11,7 @@ import {
     DEFAULT_TIMEOUT_LISTEN,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
+    SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
 import {
@@ -18,6 +20,10 @@ import {
     ScanResult,
     StopNotifications,
 } from './postcube'
+
+export const getServiceUUID = (): string => {
+    return SERVICE_UUID
+}
 
 let nobleInstance
 const getNobleInstance = async() => {
@@ -40,14 +46,14 @@ export const isEnabled = async(): Promise<boolean> => {
 
 export const requestPostCube = async(
     namePrefix: string,
-    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
 ): Promise<PostCube> => {
     throw bleErrors.notSupported(`requestPostCube is not supported on platform 'Node.js'`)
 }
 
 export const scanForPostCubes = async(
     options: ScanOptions = {},
-    services: string[] = [],
+    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
 ): Promise<ScanResult> => {
     let shouldStopScan = false
     let scanTimeout
@@ -100,6 +106,8 @@ export const scanForPostCubes = async(
 }
 
 export class PostCubeNode extends PostCube {
+    static PlatformName = '@abandonware/noble'
+
     readonly peripheral: noble.Peripheral
 
     get deviceId(): string {
@@ -137,7 +145,7 @@ export class PostCubeNode extends PostCube {
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
 
         let timeout, isConnected = false
         if (timeoutMs) {
@@ -146,7 +154,7 @@ export class PostCubeNode extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -158,11 +166,12 @@ export class PostCubeNode extends PostCube {
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@abandonware/noble]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
 
         let timeout, isDisconnected = false
         if (timeoutMs) {
@@ -171,7 +180,7 @@ export class PostCubeNode extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -183,7 +192,8 @@ export class PostCubeNode extends PostCube {
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async read(
@@ -193,7 +203,7 @@ export class PostCubeNode extends PostCube {
     ): Promise<DataView> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Reading value from PostCube (ID: ${this.id}) [@abandonware/noble]`,
+            `Reading value from PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`,
         )
 
         let timeout, isDone = false
@@ -203,7 +213,7 @@ export class PostCubeNode extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [@abandonware/noble]`)
+                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -227,7 +237,7 @@ export class PostCubeNode extends PostCube {
     ): Promise<void> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID, value },
-            `Writing value to PostCube (ID: ${this.id}) [@abandonware/noble]`,
+            `Writing value to PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`,
         )
 
         let timeout, isDone = false
@@ -237,7 +247,7 @@ export class PostCubeNode extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [@abandonware/noble]`)
+                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -261,7 +271,7 @@ export class PostCubeNode extends PostCube {
     ): Promise<StopNotifications> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
+            `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`,
         )
 
         let timeout, isListening = true
@@ -272,7 +282,7 @@ export class PostCubeNode extends PostCube {
                 }
 
                 stopListening()
-                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`)
+                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -288,7 +298,7 @@ export class PostCubeNode extends PostCube {
         const stopListening = () => {
             PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
-                `Stopped listening for value change on PostCube (ID: ${this.id}) [@abandonware/noble]`,
+                `Stopped listening for value change on PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`,
             )
 
             isListening = false

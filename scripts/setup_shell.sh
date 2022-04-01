@@ -1,0 +1,16 @@
+#!/bin/sh
+
+export BUILD_PATH=build
+
+
+export _DEBUG_SKIP_CLEANING=$DEBUG_SKIP_CLEANING
+export DEBUG_SKIP_CLEANING=0
+if [ "$_DEBUG_SKIP_CLEANING" = "1" ] || [ "$_DEBUG_SKIP_CLEANING" = "y" ] || [ "$_DEBUG_SKIP_CLEANING" = "yes" ]; then
+    export DEBUG_SKIP_CLEANING=1
+fi
+
+export _DEBUG_SKIP_NPM_INSTALL=$DEBUG_SKIP_NPM_INSTALL
+export DEBUG_SKIP_NPM_INSTALL=0
+if [ "$_DEBUG_SKIP_NPM_INSTALL" = "1" ] || [ "$_DEBUG_SKIP_NPM_INSTALL" = "y" ] || [ "$_DEBUG_SKIP_NPM_INSTALL" = "yes" ]; then
+    export DEBUG_SKIP_NPM_INSTALL=1
+fi

@@ -1,4 +1,5 @@
 
+import { Buffer } from 'buffer'
 import { chunk } from 'lodash'
 
 import { doISeriouslyHaveToUseSubtleCrypto } from '../helpers'

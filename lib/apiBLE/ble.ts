@@ -9,7 +9,7 @@ import {
     ScanOptions,
     ScanResult,
 } from './postcube'
-import type { PostCubeMockConfig } from './postcube.mock'
+import type { PostCubeMockConfig } from './mock'
 
 export enum Platform {
     web       = 'web',
@@ -18,7 +18,7 @@ export enum Platform {
     mock      = 'mock',
 }
 
-import * as postcubeMock from './postcube.mock'
+import * as postcubeMock from './mock'
 import * as postcubeWeb from './postcube.web'
 import * as postcubeCapacitor from './postcube.capacitor'
 import * as postcubeNode from './postcube.node'
@@ -58,11 +58,10 @@ const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfi
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
-    const postCube: PostCube = await platformMap[PostCubeBLE.platform].requestPostCube(
-        namePrefix,
-        [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
-        mockConfig,
-    )
+    const postCube: PostCube = await platformMap[PostCubeBLE.platform].requestPostCube(namePrefix, [
+        SERVICE_BATTERY_UUID,
+        platformMap[PostCubeBLE.platform].getServiceUUID(),
+    ], mockConfig)
 
     PostCubeLogger.debug({
         platform: PostCubeBLE.platform,
@@ -95,7 +94,10 @@ const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeM
         options: _options,
     }, 'Scanning for PostCube with options')
 
-    return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, [ SERVICE_BATTERY_UUID, SERVICE_UUID ], mockConfig)
+    return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, [
+        SERVICE_BATTERY_UUID,
+        platformMap[PostCubeBLE.platform].getServiceUUID(),
+    ], mockConfig)
 }
 
 let platform: Platform

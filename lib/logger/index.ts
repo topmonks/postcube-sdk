@@ -1,6 +1,8 @@
 
 import { jSignal, Listener } from 'jsignal'
 
+const _process = ((typeof process !== 'undefined' && !!process) ? process || {} : {}) as NodeJS.Process
+
 export interface PostCubeLogger {
     readonly stdOut: jSignal<object>
     readonly stdErr: jSignal<object>
@@ -43,8 +45,8 @@ export const PostCubeLogger: PostCubeLogger = {
         PostCubeLogger.stdOut.dispatch(log)
 
         if (PostCubeLogger.writeToProcessStd) {
-            if (typeof process?.stdout?.write === 'function') {
-                process.stdout.write(JSON.stringify(log) + '\n')
+            if (typeof _process?.stdout?.write === 'function') {
+                _process.stdout.write(JSON.stringify(log) + '\n')
                 return
             }
 
@@ -57,8 +59,8 @@ export const PostCubeLogger: PostCubeLogger = {
         PostCubeLogger.stdOut.dispatch(log)
 
         if (PostCubeLogger.writeToProcessStd) {
-            if (typeof process?.stdout?.write === 'function') {
-                process.stdout.write(JSON.stringify(log) + '\n')
+            if (typeof _process?.stdout?.write === 'function') {
+                _process.stdout.write(JSON.stringify(log) + '\n')
                 return
             }
 
@@ -71,8 +73,8 @@ export const PostCubeLogger: PostCubeLogger = {
         PostCubeLogger.stdErr.dispatch(log)
 
         if (PostCubeLogger.writeToProcessStd) {
-            if (typeof process?.stderr?.write === 'function') {
-                process.stderr.write(JSON.stringify(log) + '\n')
+            if (typeof _process?.stderr?.write === 'function') {
+                _process.stderr.write(JSON.stringify(log) + '\n')
                 return
             }
 

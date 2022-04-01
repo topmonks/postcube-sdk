@@ -15,6 +15,7 @@ import {
     DEFAULT_TIMEOUT_LISTEN,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
+    SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import {
     PostCube,
@@ -22,6 +23,10 @@ import {
     ScanResult,
     StopNotifications,
 } from './postcube'
+
+export const getServiceUUID = (): string => {
+    return SERVICE_UUID
+}
 
 export const isEnabled = async(): Promise<boolean> => {
     return await BleClient.isEnabled()
@@ -93,6 +98,8 @@ export const scanForPostCubes = async(
 }
 
 export class PostCubeCapacitor extends PostCube {
+    static PlatformName = '@capacitor-community/bluetooth-le'
+
     readonly device: BleDevice
 
     private _isConnected: boolean = false
@@ -112,14 +119,15 @@ export class PostCubeCapacitor extends PostCube {
     }
 
     private handleDisconnect(deviceId: string) {
-        PostCubeLogger.debug(`PostCube (ID: ${this.id}) has been disconnected [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`PostCube (ID: ${this.id}) has been disconnected [${PostCubeCapacitor.PlatformName}]`)
 
         this._isConnected = false
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
 
         let timeout, isConnected = false
         if (timeoutMs) {
@@ -128,7 +136,7 @@ export class PostCubeCapacitor extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -141,11 +149,12 @@ export class PostCubeCapacitor extends PostCube {
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
 
         let timeout, isDisconnected = false
         if (timeoutMs) {
@@ -154,7 +163,7 @@ export class PostCubeCapacitor extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -167,7 +176,8 @@ export class PostCubeCapacitor extends PostCube {
             timeout = null
         }
 
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     async read(
@@ -177,7 +187,7 @@ export class PostCubeCapacitor extends PostCube {
     ): Promise<DataView> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Reading value from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
+            `Reading value from PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`,
         )
 
         let timeout, isDone = false
@@ -187,7 +197,7 @@ export class PostCubeCapacitor extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -210,7 +220,7 @@ export class PostCubeCapacitor extends PostCube {
     ): Promise<void> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID, value },
-            `Writing value to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
+            `Writing value to PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`,
         )
 
         let timeout, isDone = false
@@ -220,7 +230,7 @@ export class PostCubeCapacitor extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -241,7 +251,7 @@ export class PostCubeCapacitor extends PostCube {
     ): Promise<StopNotifications> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Listening for value change on PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
+            `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`,
         )
 
         let timeout, isListening = true
@@ -252,7 +262,7 @@ export class PostCubeCapacitor extends PostCube {
                 }
 
                 stopListening()
-                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`)
+                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -265,7 +275,7 @@ export class PostCubeCapacitor extends PostCube {
         const stopListening = () => {
             PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
-                `Stopped listening for value change on PostCube (ID: ${this.id}) [@capacitor-community/bluetooth-le]`,
+                `Stopped listening for value change on PostCube (ID: ${this.id}) [${PostCubeCapacitor.PlatformName}]`,
             )
 
             isListening = false

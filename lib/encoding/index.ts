@@ -1,4 +1,6 @@
 
+import { Buffer } from 'buffer'
+
 import * as protocol from '../protocol.pb'
 import { bleErrors } from '../errors'
 import {

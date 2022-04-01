@@ -15,17 +15,25 @@ export const SERVICE_BATTERY_UUID    = '0000180f-0000-1000-8000-00805f9b34fb'
 export const CHAR_BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb'
 
 export const BOX_MAGIC         = 0x0b0e0e0f
+
+export const SERVICE_UUID      = '13668000-ede0-45de-87e8-77a6c2b8c0b6'
 export const SERVICE_UUID_16   = 0x8000
 export const SERVICE_UUID_BASE = [
     0xb6, 0xc0, 0xb8, 0xc2, 0xa6, 0x77, 0xe8, 0x87,
     0xde, 0x45, 0xe0, 0xed, 0x00, 0x00, 0x66, 0x13,
 ]
 
-export const SERVICE_UUID      = '13668000-ede0-45de-87e8-77a6c2b8c0b6'
 export const CHAR_CONTROL_UUID = '13668001-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_CONTROL_UUID_16 = 0x8001
+
 export const CHAR_RESULT_UUID  = '13668002-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_RESULT_UUID_16  = 0x8002
+
 export const CHAR_STATUS_UUID  = '13668003-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_STATUS_UUID_16  = 0x8003
+
 export const CHAR_VERSION_UUID = '13668004-ede0-45de-87e8-77a6c2b8c0b6'
+export const CHAR_VERSION_UUID_16 = 0x8004
 
 // ../firmware/nrf_firmware/box_results.h
 export const RES_UNDEFINED            = 0

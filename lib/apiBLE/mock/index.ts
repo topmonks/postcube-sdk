@@ -54,6 +54,10 @@ export const postCubeMockConfig: PostCubeMockConfig = {
     availableDevices: [],
 }
 
+export const getServiceUUID = (): string => {
+    return SERVICE_UUID
+}
+
 export const isEnabled = async(): Promise<boolean> => {
     return true
 }
@@ -124,6 +128,8 @@ export const scanForPostCubes = async(
 }
 
 export class PostCubeMock extends PostCube {
+    static PlatformName = 'Mock'
+
     config: PostCubeMockConfig
     deviceConfig: MockDeviceConfig
     characteristics: {
@@ -138,7 +144,8 @@ export class PostCubeMock extends PostCube {
     get isConnected(): boolean { return this._isConnected }
     set isConnected(isConnected: boolean) {
         this._isConnected = isConnected
-        this.emit('change', this)
+        this.onChange.dispatch(this)
+        // this.emit('change', this)
     }
 
     constructor(config: PostCubeMockConfig, deviceConfig: MockDeviceConfig) {
@@ -165,7 +172,7 @@ export class PostCubeMock extends PostCube {
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [Mock]`)
+        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) []`)
 
         let timeout, isConnected = false
         if (timeoutMs) {
@@ -174,7 +181,7 @@ export class PostCubeMock extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [Mock]`)
+                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -194,7 +201,7 @@ export class PostCubeMock extends PostCube {
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [Mock]`)
+        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
 
         let timeout, isDisconnected = false
         if (timeoutMs) {
@@ -203,7 +210,7 @@ export class PostCubeMock extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [Mock]`)
+                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -220,7 +227,7 @@ export class PostCubeMock extends PostCube {
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<DataView> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [Mock]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
 
         let timeout, isDone = false
         if (timeoutMs) {
@@ -229,7 +236,7 @@ export class PostCubeMock extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [Mock]`)
+                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -251,7 +258,7 @@ export class PostCubeMock extends PostCube {
         value: DataView,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<void> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [Mock]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
 
         let timeout, isDone = false
         if (timeoutMs) {
@@ -260,7 +267,7 @@ export class PostCubeMock extends PostCube {
                     return
                 }
 
-                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [Mock]`)
+                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -277,7 +284,7 @@ export class PostCubeMock extends PostCube {
     async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>, timeoutMs?: number): Promise<StopNotifications> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Listening for value change on PostCube (ID: ${this.id}) [Mock]`,
+            `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`,
         )
 
         let timeout, isListening = true
@@ -288,7 +295,7 @@ export class PostCubeMock extends PostCube {
                 }
 
                 stopListening()
-                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [Mock]`)
+                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`)
             }, timeoutMs)
         }
 
@@ -302,7 +309,7 @@ export class PostCubeMock extends PostCube {
         const stopListening = () => {
             PostCubeLogger.debug(
                 { serviceUUID, characteristicUUID },
-                `Stopped listening for value change on PostCube (ID: ${this.id}) [Mock]`,
+                `Stopped listening for value change on PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`,
             )
 
             isListening = false
