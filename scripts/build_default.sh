@@ -3,11 +3,11 @@ set -ex
 
 . scripts/setup_shell.sh
 
-if [[ "$DEBUG_SKIP_NPM_INSTALL" != "1" ]]; then
+if [ "$DEBUG_SKIP_NPM_INSTALL" != "1" ]; then
     npm install
 fi
 
-if [[ "$DEBUG_SKIP_CLEANING" != "1" ]]; then
+if [ "$DEBUG_SKIP_CLEANING" != "1" ]; then
     node_modules/.bin/rimraf $BUILD_PATH
 fi
 
@@ -17,7 +17,7 @@ cp .gitignore .npmignore protocol.proto protocol.options $BUILD_PATH
 
 sed 's/cjs\/index\.js/esm\/index\.js/; s/[[:space:]]*"\@abandonware\/noble".*//; s/[[:space:]]*"\@types\/noble".*//' package.json > $BUILD_PATH/package.json
 
-if [[ "$DEBUG_SKIP_NPM_INSTALL" != "1" ]]; then
+if [ "$DEBUG_SKIP_NPM_INSTALL" != "1" ]; then
     npm install --prefix $BUILD_PATH
 fi
 
