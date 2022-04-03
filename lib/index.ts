@@ -90,6 +90,9 @@ export {
     BLOCKING_DELIVERY_SENDER_STATES,
 } from './constants/box'
 export {
+    Family,
+} from './constants/chipset'
+export {
     PACKET_SIZE,
     PACKET_LAST_INDEX,
     PACKET_LAST_TRUE,
