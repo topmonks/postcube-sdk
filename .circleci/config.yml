@@ -17,9 +17,9 @@ jobs:
       - run:
           name: Install dependecies
           command: npm install
-      - run:
-          name: Run tests
-          command: npm run test
+      # - run:
+      #     name: Run tests
+      #     command: npm run test
       - store_test_results:
           path: ~/repo/results
       - store_artifacts:
