@@ -3,6 +3,7 @@ import { jSignal, Listener } from 'jsignal'
 
 import { PostCubeLogger } from '../../logger'
 import {
+    PostCubeVersion,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     DEFAULT_TIMEOUT_IO,
@@ -140,6 +141,11 @@ export class PostCubeMock extends PostCube {
         return this.deviceConfig?.deviceId
     }
 
+    private _version: PostCubeVersion
+    get version(): PostCubeVersion {
+        return this._version
+    }
+
     private _isConnected: boolean
     get isConnected(): boolean { return this._isConnected }
     set isConnected(isConnected: boolean) {
@@ -222,7 +228,7 @@ export class PostCubeMock extends PostCube {
         }
     }
 
-    async read(
+    async readV2(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,

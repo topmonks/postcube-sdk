@@ -17,12 +17,12 @@ import { parseSecretCode } from '../../lib/helpers'
 import {
     Command,
     EncodingEncryptionStrategy,
-    encodeCommand,
-    encodeResult,
-    chunkBuffer,
-    parseBufferChunk,
-    decodeChunkedResult,
-    decodeChunkedPacket,
+    encodeCommandV2,
+    encodeResultV2,
+    chunkBufferV2,
+    parseBufferChunkV2,
+    decodeChunkedResultV2,
+    decodeChunkedPacketV2,
 } from '../../lib/encoding'
 import { hashSHA256 } from '../../lib/encoding/hash'
 import { BleErrorCode } from '../../lib/errors'
@@ -66,9 +66,9 @@ export const runEncodingTests = () => {
             ...parseSecretCode(secretCode),
         ])
 
-        const encodedCommand = await encodeCommand(command, { commandId, expireAt, boxId, secretCode })
+        const encodedCommand = await encodeCommandV2(command, { commandId, expireAt, boxId, secretCode })
 
-        const { encryptedPacket, packet } = await decodeChunkedPacket(chunk(encodedCommand, PACKET_SIZE - 1), { boxId, secretCode })
+        const { encryptedPacket, packet } = await decodeChunkedPacketV2(chunk(encodedCommand, PACKET_SIZE - 1), { boxId, secretCode })
 
         expect(encryptedPacket?.commandId).to.equal(commandId)
 
@@ -111,7 +111,7 @@ export const runEncodingTests = () => {
             ...parseSecretCode(secretCode),
         ])
 
-        const encodedCommand = await encodeCommand(command, {
+        const encodedCommand = await encodeCommandV2(command, {
             commandId,
             expireAt,
             keys: { hashedSecretCode, keyIndex, privateKey, publicKey },
@@ -122,7 +122,7 @@ export const runEncodingTests = () => {
             expect(encodedCommand[index]).to.equal(expectedEncodedEncryptedPacket[index])
         }
 
-        const { encryptedPacket, packet } = await decodeChunkedPacket(
+        const { encryptedPacket, packet } = await decodeChunkedPacketV2(
             chunk(encodedCommand, PACKET_SIZE - 1),
             { keys: { hashedSecretCode, privateKey, publicKey } },
         )
@@ -160,7 +160,7 @@ export const runEncodingTests = () => {
             ...parseSecretCode(secretCode),
         ])
 
-        const encodedCommand = await encodeCommand(command, {
+        const encodedCommand = await encodeCommandV2(command, {
             commandId,
             expireAt,
             keys: { hashedSecretCode, keyIndex, privateKey, publicKey },
@@ -171,7 +171,7 @@ export const runEncodingTests = () => {
             expect(encodedCommand[index]).to.equal(expectedEncodedEncryptedPacket[index])
         }
 
-        const { encryptedPacket, packet } = await decodeChunkedPacket(
+        const { encryptedPacket, packet } = await decodeChunkedPacketV2(
             chunk(encodedCommand, PACKET_SIZE - 1),
             { keys: { hashedSecretCode, privateKey, publicKey } },
         )
@@ -208,7 +208,7 @@ export const runEncodingTests = () => {
             ...parseSecretCode(secretCode),
         ])
 
-        const encodedCommand = await encodeCommand(command, {
+        const encodedCommand = await encodeCommandV2(command, {
             commandId,
             expireAt,
             keys: { hashedSecretCode, keyIndex, privateKey, publicKey },
@@ -219,7 +219,7 @@ export const runEncodingTests = () => {
             expect(encodedCommand[index]).to.equal(expectedEncodedEncryptedPacket[index])
         }
 
-        const { encryptedPacket, packet } = await decodeChunkedPacket(
+        const { encryptedPacket, packet } = await decodeChunkedPacketV2(
             chunk(encodedCommand, PACKET_SIZE - 1),
             { keys: { hashedSecretCode, privateKey, publicKey } },
         )
@@ -241,7 +241,7 @@ export const runEncodingTests = () => {
         const { boxId, secretCode } = expectedEncodedCommandsMap.alpha
 
         try {
-            await encodeCommand({} as Command, { boxId, secretCode })
+            await encodeCommandV2({} as Command, { boxId, secretCode })
 
             expect(false, 'should have failed, did not').to.be.true
         } catch (err) {
@@ -253,7 +253,7 @@ export const runEncodingTests = () => {
         const { boxId, secretCode } = expectedEncodedCommandsMap.alpha
 
         try {
-            await encodeCommand({
+            await encodeCommandV2({
                 unlock: { lockId: 3 },
                 timeSync: { timestamp: 365648 },
             }, { boxId, secretCode })
@@ -268,7 +268,7 @@ export const runEncodingTests = () => {
         const { boxId, secretCode } = expectedEncodedCommandsMap.alpha
 
         try {
-            await encodeCommand({
+            await encodeCommandV2({
                 unlock: { lockId: 3 },
             }, {
                 encryptionStrategy: EncodingEncryptionStrategy.secretCode,
@@ -289,7 +289,7 @@ export const runEncodingTests = () => {
             encodedResult: expectedEncodedResult,
         } = expectedEncodedResultsMap.alpha
 
-        const encodedResult = await encodeResult(commandId, value, errorCode)
+        const encodedResult = await encodeResultV2(commandId, value, errorCode)
 
         expect(encodedResult.length).to.equal(expectedEncodedResult.length)
 
@@ -301,7 +301,7 @@ export const runEncodingTests = () => {
     it('should chunk buffer', async() => {
         const buffer = getRandomizedArrayBuffer((PACKET_SIZE - 1) * 2)
 
-        const chunkedBuffer = await chunkBuffer(buffer)
+        const chunkedBuffer = await chunkBufferV2(buffer)
 
         expect(chunkedBuffer.length).to.equal(2)
 
@@ -312,7 +312,7 @@ export const runEncodingTests = () => {
     it('should chunk buffer with 0x0 padding if necessary', async() => {
         const buffer = getRandomizedArrayBuffer(PACKET_SIZE * 2)
 
-        const chunkedBuffer = await chunkBuffer(buffer)
+        const chunkedBuffer = await chunkBufferV2(buffer)
 
         expect(chunkedBuffer.length).to.equal(3)
 
@@ -339,7 +339,7 @@ export const runEncodingTests = () => {
         const chunk = getRandomizedDataView(PACKET_SIZE)
         chunk.setUint8(PACKET_LAST_INDEX, PACKET_LAST_TRUE)
 
-        const chunkedPacket = await parseBufferChunk(chunk)
+        const chunkedPacket = await parseBufferChunkV2(chunk)
 
         expect(chunkedPacket.isLast).to.be.true
         expect(chunkedPacket.buffer.length).to.equal(PACKET_SIZE - 1)
@@ -353,7 +353,7 @@ export const runEncodingTests = () => {
         const chunk = getRandomizedDataView(PACKET_SIZE)
         chunk.setUint8(PACKET_LAST_INDEX, PACKET_LAST_FALSE)
 
-        const chunkedPacket = await parseBufferChunk(chunk)
+        const chunkedPacket = await parseBufferChunkV2(chunk)
 
         expect(chunkedPacket.isLast).to.be.false
         expect(chunkedPacket.buffer.length).to.equal(PACKET_SIZE - 1)
@@ -369,7 +369,7 @@ export const runEncodingTests = () => {
         const chunk = getRandomizedDataView(PACKET_SIZE + delta)
         chunk.setUint8(PACKET_LAST_INDEX, PACKET_LAST_TRUE)
 
-        const chunkedPacket = await parseBufferChunk(chunk)
+        const chunkedPacket = await parseBufferChunkV2(chunk)
 
         expect(chunkedPacket.isLast).to.be.true
         expect(chunkedPacket.buffer.length).to.equal(PACKET_SIZE - 1)
@@ -385,7 +385,7 @@ export const runEncodingTests = () => {
         const chunk = getRandomizedDataView(PACKET_SIZE - delta)
         chunk.setUint8(PACKET_LAST_INDEX, PACKET_LAST_TRUE)
 
-        const chunkedPacket = await parseBufferChunk(chunk)
+        const chunkedPacket = await parseBufferChunkV2(chunk)
 
         expect(chunkedPacket.isLast).to.be.true
         expect(chunkedPacket.buffer.length).to.equal(PACKET_SIZE - 1 - delta)
@@ -403,7 +403,7 @@ export const runEncodingTests = () => {
             errorCode: expectedErrorCode,
         } = expectedEncodedResultsMap.alpha
 
-        const result = await decodeChunkedResult(chunk(encodedResult, PACKET_SIZE - 1))
+        const result = await decodeChunkedResultV2(chunk(encodedResult, PACKET_SIZE - 1))
 
         expect(result?.commandId).to.equal(expectedCommandId)
         expect(result?.value).to.equal(expectedValue)
@@ -416,7 +416,7 @@ export const runEncodingTests = () => {
             packet: expectedPacket,
         } = expectedEncodedPacketsMap.alpha
 
-        const { packet } = await decodeChunkedPacket(chunk(encodedPacket, PACKET_SIZE - 1))
+        const { packet } = await decodeChunkedPacketV2(chunk(encodedPacket, PACKET_SIZE - 1))
 
         expect(packet?.expireAt).to.equal(expectedPacket?.expireAt)
 
@@ -437,7 +437,7 @@ export const runEncodingTests = () => {
             packet: expectedPacket,
         } = expectedEncodedPacketsMap.beta
 
-        const { packet } = await decodeChunkedPacket(chunk(encodedPacket, PACKET_SIZE - 1))
+        const { packet } = await decodeChunkedPacketV2(chunk(encodedPacket, PACKET_SIZE - 1))
 
         expect(packet?.expireAt).to.equal(expectedPacket?.expireAt)
 
@@ -451,7 +451,7 @@ export const runEncodingTests = () => {
             packet: expectedPacket,
         } = expectedEncodedPacketsMap.gamma
 
-        const { packet } = await decodeChunkedPacket(chunk(encodedPacket, PACKET_SIZE - 1))
+        const { packet } = await decodeChunkedPacketV2(chunk(encodedPacket, PACKET_SIZE - 1))
 
         expect(packet?.expireAt).to.equal(expectedPacket?.expireAt)
 
@@ -465,7 +465,7 @@ export const runEncodingTests = () => {
             packet: expectedPacket,
         } = expectedEncodedPacketsMap.delta
 
-        const { packet } = await decodeChunkedPacket(chunk(encodedPacket, PACKET_SIZE - 1))
+        const { packet } = await decodeChunkedPacketV2(chunk(encodedPacket, PACKET_SIZE - 1))
 
         expect(packet?.expireAt).to.equal(expectedPacket?.expireAt)
         expect(typeof packet?.nuke).to.equal('object')
@@ -477,7 +477,7 @@ export const runEncodingTests = () => {
             packet: expectedPacket,
         } = expectedEncodedPacketsMap.epsilon
 
-        const { packet } = await decodeChunkedPacket(chunk(encodedPacket, PACKET_SIZE - 1))
+        const { packet } = await decodeChunkedPacketV2(chunk(encodedPacket, PACKET_SIZE - 1))
 
         expect(packet?.expireAt).to.equal(expectedPacket?.expireAt)
         expect(typeof packet?.protect).to.equal('object')

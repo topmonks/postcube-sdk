@@ -3,25 +3,25 @@ import { Listener } from 'jsignal'
 
 import { PostCubeLogger } from '../logger'
 import {
+    PostCubeVersion,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     DEFAULT_TIMEOUT_IO,
     DEFAULT_TIMEOUT_LISTEN,
+    DEPRECATED_SERVICE_UUID,
+    DEPRECATED_SERVICE_UUID_16,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
     SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
+import { resolveVersionFromAvailableServices } from '../helpers'
 import {
     PostCube,
     ScanOptions,
     ScanResult,
     StopNotifications,
 } from './postcube'
-
-export const getServiceUUID = (): number => {
-    return SERVICE_UUID_16
-}
 
 export const isEnabled = async(): Promise<boolean> => {
     return (
@@ -32,7 +32,13 @@ export const isEnabled = async(): Promise<boolean> => {
 
 export const requestPostCube = async(
     namePrefix: string,
-    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<PostCube> => {
     const requestDeviceOptions = {
         acceptAllDevices: false,
@@ -52,7 +58,13 @@ export const requestPostCube = async(
 
 export const scanForPostCubes = async(
     options: ScanOptions = {},
-    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<ScanResult> => {
     return {
         async stopScan() {},
@@ -70,12 +82,18 @@ export class PostCubeWeb extends PostCube {
     readonly device: BluetoothDevice
     gattServer: BluetoothRemoteGATTServer
 
+    private _version: PostCubeVersion
+
     get deviceId(): string {
         return this.device?.id
     }
 
     get isConnected(): boolean {
         return !!this.gattServer?.connected || !!this.gattServer?.device?.gatt?.connected
+    }
+
+    get version(): PostCubeVersion {
+        return this._version
     }
 
     constructor(device: BluetoothDevice) {
@@ -93,6 +111,13 @@ export class PostCubeWeb extends PostCube {
         return await service.getCharacteristic(characteristicUUID)
     }
 
+    private async handleGattServerDisconnected(event: Event) {
+        PostCubeLogger.debug({ event }, `Disconnected from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+
+        this.gattServer = null
+        this.onChange.dispatch(this)
+    }
+
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
         PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
 
@@ -108,6 +133,13 @@ export class PostCubeWeb extends PostCube {
         }
 
         this.gattServer = await this.gattServer.connect()
+
+        this.gattServer.device.addEventListener('gattserverdisconnected', this.handleGattServerDisconnected)
+
+        const primaryServices = await this.gattServer.getPrimaryServices()
+        this._version = await resolveVersionFromAvailableServices(
+            primaryServices.map(service => service.uuid),
+        )
 
         if (timeout) {
             clearTimeout(timeout)
@@ -144,7 +176,7 @@ export class PostCubeWeb extends PostCube {
         this.onChange.dispatch(this)
     }
 
-    async read(
+    async readV2(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,

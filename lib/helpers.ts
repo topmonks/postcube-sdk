@@ -1,5 +1,6 @@
 
 import { chunk } from 'lodash'
+import { DEPRECATED_SERVICE_UUID, DEPRECATED_SERVICE_UUID_16, PostCubeVersion, SERVICE_UUID, SERVICE_UUID_16, SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME } from './constants/bluetooth'
 
 import { bleErrors } from './errors'
 
@@ -45,6 +46,19 @@ export const parseSecretCode = (secretCode: string|Iterable<number>): number[] =
     return chunk(secretCode, 2).map(byte => parseInt(byte.join(''), 16))
 }
 
+export const uint32ToByteArray = (value: number): number[] => {
+    return [
+        (value >> 24) & 0xff,
+        (value >> 16) & 0xff,
+        (value >> 8) & 0xff,
+        value & 0xff,
+    ]
+}
+
+export const generateTimestamp = (useMilliseconds: boolean = false): number[] => {
+    return uint32ToByteArray(Math.floor(Date.now() / (useMilliseconds ? 1 : 1000)))
+}
+
 export const parsePostCubeName = (name: string): {
     prefix: string
     id: string
@@ -74,6 +88,22 @@ export const parsePostCubeName = (name: string): {
             nameParts[1] : null,
         isDev,
     }
+}
+
+export const resolveVersionFromAvailableServices = (services: (string|number)[]): PostCubeVersion => {
+    for (const service of services) {
+        switch (service) {
+        case DEPRECATED_SERVICE_UUID:
+        case DEPRECATED_SERVICE_UUID_16.toString():
+            return PostCubeVersion.v1
+        case SERVICE_UUID:
+        case SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME:
+        case SERVICE_UUID_16.toString():
+            return PostCubeVersion.v2
+        }
+    }
+
+    return null
 }
 
 export const doISeriouslyHaveToUseSubtleCrypto = () => {

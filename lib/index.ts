@@ -11,7 +11,10 @@ export {
     getFuture,
     getFutureEpoch,
     parseSecretCode,
+    uint32ToByteArray,
+    generateTimestamp,
     parsePostCubeName,
+    resolveVersionFromAvailableServices,
     doISeriouslyHaveToUseSubtleCrypto,
 } from './helpers'
 export { PostCubeLogger } from './logger'
@@ -20,18 +23,44 @@ export { PostCubeLogger } from './logger'
 // Encoding
 
 export {
+    CommandType,
     EncodingEncryptionStrategy,
-    encodeCommand,
-    encodeResult,
-    chunkBuffer,
-    parseBufferChunk,
-    decodeChunkedResult,
-    decodeChunkedPacket,
+    splitCommandV1,
+    parseResultV1,
+    createCommandV1,
+    encodeCommandV2,
+    encodeResultV2,
+    chunkBufferV2,
+    parseBufferChunkV2,
+    decodeChunkedResultV2,
+    decodeChunkedPacketV2,
 } from './encoding'
 export type {
+    CommandMap,
     Command,
     EncodingOptions,
 } from './encoding'
+export {
+    generateCommandId,
+} from './encoding/command'
+export {
+    generateKeyPairV2,
+    cipherV1,
+    decipherV1,
+    cipherV2,
+    decipherV2,
+    deriveEncryptionKeyV1,
+    deriveEncryptionKeyV2,
+    encryptV1,
+    decryptV1,
+    encryptV2,
+    decryptV2,
+} from './encoding/encryption'
+export type { EncryptionKeys } from './encoding/encryption'
+export {
+    hashSHA256,
+    hashSharedSecret,
+} from './encoding/hash'
 
 
 // BLE API
@@ -43,12 +72,16 @@ export {
     requestPostCubeMock,
     scanForPostCubesMock,
     postCubeMockConfig,
+    localStorageKeys,
+    inMemoryKeys,
 } from './apiBLE'
 export type {
     ScanOptions,
     ScanResult,
     PostCubeMockConfig,
     MockDeviceConfig,
+    KeyPair,
+    Keys,
 } from './apiBLE'
 
 
@@ -90,9 +123,7 @@ export {
     BLOCKING_DELIVERY_SENDER_STATES,
 } from './constants/box'
 export {
-    Family,
-} from './constants/chipset'
-export {
+    PostCubeVersion,
     PACKET_SIZE,
     PACKET_LAST_INDEX,
     PACKET_LAST_TRUE,
@@ -107,6 +138,7 @@ export {
     SERVICE_BATTERY_UUID,
     BOX_MAGIC,
     SERVICE_UUID_16,
+    SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME,
     SERVICE_UUID_BASE,
     SERVICE_UUID,
     CHAR_CONTROL_UUID,

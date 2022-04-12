@@ -13,6 +13,7 @@ export interface PostCubeLogger {
     log(data: any, message?: string)
     debug(data: any, message?: string)
     info(data: any, message?: string)
+    warn(data: any, message?: string)
     error(data: any, message?: string)
 }
 
@@ -50,7 +51,7 @@ export const PostCubeLogger: PostCubeLogger = {
                 return
             }
 
-            console.log(log)
+            console.debug(log)
         }
     },
     info(data: any, message?: string) {
@@ -65,6 +66,20 @@ export const PostCubeLogger: PostCubeLogger = {
             }
 
             console.log(log)
+        }
+    },
+    warn(data: any, message?: string) {
+        const log = composeLog(30, data, message)
+
+        PostCubeLogger.stdOut.dispatch(log)
+
+        if (PostCubeLogger.writeToProcessStd) {
+            if (typeof _process?.stdout?.write === 'function') {
+                _process.stdout.write(JSON.stringify(log) + '\n')
+                return
+            }
+
+            console.warn(log)
         }
     },
     error(data: any, message?: string) {

@@ -9,14 +9,18 @@ import {
 import { PostCubeLogger } from '../logger'
 import { bleErrors } from '../errors'
 import {
+    PostCubeVersion,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     DEFAULT_TIMEOUT_IO,
     DEFAULT_TIMEOUT_LISTEN,
+    DEPRECATED_SERVICE_UUID,
+    DEPRECATED_SERVICE_UUID_16,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
     SERVICE_UUID_16,
 } from '../constants/bluetooth'
+import { resolveVersionFromAvailableServices } from '../helpers'
 import {
     PostCube,
     ScanOptions,
@@ -24,23 +28,25 @@ import {
     StopNotifications,
 } from './postcube'
 
-export const getServiceUUID = (): string => {
-    return SERVICE_UUID
-}
-
 export const isEnabled = async(): Promise<boolean> => {
     return await BleClient.isEnabled()
 }
 
 export const requestPostCube = async(
     namePrefix: string,
-    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<PostCube> => {
     await BleClient.initialize()
 
     const device = await BleClient.requestDevice({
         namePrefix,
-        optionalServices: services,
+        optionalServices: services as string[],
     })
 
     return new PostCubeCapacitor(device)
@@ -48,7 +54,13 @@ export const requestPostCube = async(
 
 export const scanForPostCubes = async(
     options: ScanOptions = {},
-    services: string[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<ScanResult> => {
     const abortSignal = new jSignal()
     let scanTimeout
@@ -86,7 +98,7 @@ export const scanForPostCubes = async(
 
             await BleClient.requestLEScan({
                 namePrefix: options.namePrefix,
-                optionalServices: services,
+                optionalServices: services as string[],
             }, handleDiscovery)
         })
     }
@@ -103,6 +115,7 @@ export class PostCubeCapacitor extends PostCube {
     readonly device: BleDevice
 
     private _isConnected: boolean = false
+    private _version: PostCubeVersion
 
     get deviceId(): string {
         return this.device?.deviceId
@@ -110,6 +123,10 @@ export class PostCubeCapacitor extends PostCube {
 
     get isConnected(): boolean {
         return this._isConnected
+    }
+
+    get version(): PostCubeVersion {
+        return this._version
     }
 
     constructor(device: BleDevice) {
@@ -123,7 +140,6 @@ export class PostCubeCapacitor extends PostCube {
 
         this._isConnected = false
         this.onChange.dispatch(this)
-        // this.emit('change', this)
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
@@ -142,6 +158,11 @@ export class PostCubeCapacitor extends PostCube {
 
         await BleClient.connect(this.deviceId, this.handleDisconnect, { timeout: timeoutMs })
 
+        const services = await BleClient.getServices(this.deviceId)
+        this._version = await resolveVersionFromAvailableServices(
+            services.map(service => service.uuid),
+        )
+
         this._isConnected = true
         isConnected = true
         if (timeout) {
@@ -150,7 +171,6 @@ export class PostCubeCapacitor extends PostCube {
         }
 
         this.onChange.dispatch(this)
-        // this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
@@ -177,10 +197,9 @@ export class PostCubeCapacitor extends PostCube {
         }
 
         this.onChange.dispatch(this)
-        // this.emit('change', this)
     }
 
-    async read(
+    async readV2(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,

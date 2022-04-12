@@ -15,10 +15,10 @@ import {
 } from '../../constants/bluetooth'
 import { bleErrors } from '../../errors'
 import {
-    encodeResult,
-    chunkBuffer,
-    parseBufferChunk,
-    decodeChunkedPacket,
+    encodeResultV2,
+    chunkBufferV2,
+    parseBufferChunkV2,
+    decodeChunkedPacketV2,
 } from '../../encoding'
 import type { PostCubeMock } from './index'
 
@@ -63,7 +63,7 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
             return
         }
 
-        const { buffer, isLast } = await parseBufferChunk(currentValue)
+        const { buffer, isLast } = await parseBufferChunkV2(currentValue)
         commandBuffer.push(buffer)
 
         if (isLast) {
@@ -73,7 +73,7 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
 
     const processCommand = async() => {
         try {
-            const { encryptedPacket, packet } = await decodeChunkedPacket(commandBuffer)
+            const { encryptedPacket, packet } = await decodeChunkedPacketV2(commandBuffer)
 
             let resultCode = 0
             switch (true) {
@@ -102,8 +102,8 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
                     postCubeMock.deviceConfig.setKeyResult : RES_OK
 
                 if (resultCode === RES_OK) {
-                    postCubeMock.setKeyIndex(packet.setKey.keyIndex)
-                    postCubeMock.setPublicKey(packet.setKey.publicKey)
+                    // postCubeMock.setKeyIndex(packet.setKey.keyIndex)
+                    // postCubeMock.setPublicKey(packet.setKey.publicKey)
                 }
                 break
             case !!packet.nuke:
@@ -119,8 +119,8 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
                 break
             }
 
-            const result = await encodeResult(encryptedPacket.commandId, resultCode)
-            const chunks = await chunkBuffer(result)
+            const result = await encodeResultV2(encryptedPacket.commandId, resultCode)
+            const chunks = await chunkBufferV2(result)
 
             const characteristic = await postCubeMock.getCharacteristic(SERVICE_UUID, CHAR_RESULT_UUID)
             for (const chunk of chunks) {

@@ -1,4 +1,13 @@
 
+export type {
+    KeyPair,
+    Keys,
+} from './keys'
+export {
+    localStorageKeys,
+    inMemoryKeys,
+} from './keys'
+
 export {
     PostCubeBLE,
     Platform,

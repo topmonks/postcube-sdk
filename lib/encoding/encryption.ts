@@ -1,17 +1,13 @@
 
 import { Buffer } from 'buffer'
 
+import {
+    NONCE,
+} from '../constants/bluetooth'
 import { doISeriouslyHaveToUseSubtleCrypto } from '../helpers'
-import {
-    generateKeyPair as generateKeyPairSubtle,
-    cipher as cipherSubtle,
-    deriveEncryptionKey as deriveEncryptionKeySubtle,
-} from './encryption.subtle'
-import {
-    generateKeyPair as generateKeyPairNode,
-    cipher as cipherNode,
-    deriveEncryptionKey as deriveEncryptionKeyNode,
-} from './encryption.node'
+import * as chacha20 from './chacha20'
+import * as encryptionSubtle from './encryption.subtle'
+import * as encryptionNode from './encryption.node'
 
 export interface EncryptionKeys {
     keyIndex?: number
@@ -20,18 +16,28 @@ export interface EncryptionKeys {
     publicKey?: Uint8Array|number[]
 }
 
-export const generateKeyPair = async(): Promise<{
+export const generateKeyPairV2 = async(): Promise<{
     privateKey: Uint8Array
     publicKey: Uint8Array
 }> => {
     if (doISeriouslyHaveToUseSubtleCrypto()) {
-        return generateKeyPairSubtle()
+        return encryptionSubtle.generateKeyPairV2()
     }
 
-    return generateKeyPairNode()
+    return encryptionNode.generateKeyPairV2()
 }
 
-export const cipher = async(
+export const cipherV1 = async(encryptionKey: Uint8Array, data: Iterable<number>): Promise<Uint8Array> => {
+    return chacha20.encrypt(encryptionKey, NONCE, data)
+}
+
+export const decipherV1 = async(encryptionKey: Uint8Array, data: Iterable<number>): Promise<Uint8Array> => {
+    const encrypted = await cipherV1(encryptionKey, data)
+
+    return encrypted
+}
+
+export const cipherV2 = async(
     encryptionKey: Uint8Array,
     data: Iterable<number>,
     keys: EncryptionKeys,
@@ -40,38 +46,66 @@ export const cipher = async(
     authTag: Buffer
 }> => {
     if (doISeriouslyHaveToUseSubtleCrypto()) {
-        return cipherSubtle(encryptionKey, data, keys)
+        return encryptionSubtle.cipherV2(encryptionKey, data, keys)
     }
 
-    return cipherNode(encryptionKey, data, keys)
+    return encryptionNode.cipherV2(encryptionKey, data, keys)
 }
 
-export const decipher = async(
+export const decipherV2 = async(
     encryptionKey: Uint8Array,
     data: Iterable<number>,
     keys: EncryptionKeys,
-): Promise<{ decrypted: Buffer }> => {
-    const { encrypted } = await cipher(encryptionKey, data, keys)
+): Promise<Buffer> => {
+    const { encrypted } = await cipherV2(encryptionKey, data, keys)
 
-    return { decrypted: encrypted }
+    return encrypted
 }
 
-export const deriveEncryptionKey = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
+export const deriveEncryptionKeyV1 = async(privateKey: Uint8Array|number[], publicKey: Uint8Array|number[]): Promise<Uint8Array> => {
     if (doISeriouslyHaveToUseSubtleCrypto()) {
-        return deriveEncryptionKeySubtle(commandId, keys)
+        return encryptionSubtle.deriveEncryptionKeyV1(privateKey, publicKey)
     }
 
-    return deriveEncryptionKeyNode(commandId, keys)
+    return encryptionNode.deriveEncryptionKeyV1(privateKey, publicKey)
 }
 
-export const encrypt = async(data: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
-    const encryptionKey = await deriveEncryptionKey(commandId, keys)
+export const deriveEncryptionKeyV2 = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
+    if (doISeriouslyHaveToUseSubtleCrypto()) {
+        return encryptionSubtle.deriveEncryptionKeyV2(commandId, keys)
+    }
 
-    return cipher(encryptionKey, data, keys)
+    return encryptionNode.deriveEncryptionKeyV2(commandId, keys)
 }
 
-export const decrypt = async(encryptedData: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
-    const encryptionKey = await deriveEncryptionKey(commandId, keys)
+export const encryptV1 = async(
+    data: Iterable<number>,
+    privateKey: Uint8Array|number[],
+    publicKey: Uint8Array|number[],
+) => {
+    const encryptionKey = await deriveEncryptionKeyV1(privateKey, publicKey)
 
-    return decipher(encryptionKey, encryptedData, keys)
+    return cipherV1(encryptionKey, data)
+}
+
+export const decryptV1 = async(
+    encryptedData: Iterable<number>,
+    privateKey: Uint8Array|number[],
+    publicKey: Uint8Array|number[],
+) => {
+    const encryptionKey = await deriveEncryptionKeyV1(privateKey, publicKey)
+
+    return decipherV1(encryptionKey, encryptedData)
+}
+
+export const encryptV2 = async(data: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
+    const encryptionKey = await deriveEncryptionKeyV2(commandId, keys)
+
+    return cipherV2(encryptionKey, data, keys)
+}
+
+export const decryptV2 = async(encryptedData: Iterable<number>, commandId: number, keys: EncryptionKeys) => {
+    const encryptionKey = await deriveEncryptionKeyV2(commandId, keys)
+
+    return decipherV2(encryptionKey, encryptedData, keys)
 }

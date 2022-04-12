@@ -5,25 +5,25 @@ import type * as noble from '@abandonware/noble'
 
 import { PostCubeLogger } from '../logger'
 import {
+    PostCubeVersion,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     DEFAULT_TIMEOUT_IO,
     DEFAULT_TIMEOUT_LISTEN,
+    DEPRECATED_SERVICE_UUID,
+    DEPRECATED_SERVICE_UUID_16,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
     SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
+import { resolveVersionFromAvailableServices } from '../helpers'
 import {
     PostCube,
     ScanOptions,
     ScanResult,
     StopNotifications,
 } from './postcube'
-
-export const getServiceUUID = (): string => {
-    return SERVICE_UUID
-}
 
 let nobleInstance
 const getNobleInstance = async() => {
@@ -34,7 +34,7 @@ const getNobleInstance = async() => {
     }
 
     if (!nobleInstance) {
-        nobleInstance = require('@abandonware/noble')
+        nobleInstance = await require('@abandonware/noble')
     }
 
     return nobleInstance
@@ -46,14 +46,26 @@ export const isEnabled = async(): Promise<boolean> => {
 
 export const requestPostCube = async(
     namePrefix: string,
-    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<PostCube> => {
     throw bleErrors.notSupported(`requestPostCube is not supported on platform 'Node.js'`)
 }
 
 export const scanForPostCubes = async(
     options: ScanOptions = {},
-    services: (string|number)[] = [ SERVICE_BATTERY_UUID, SERVICE_UUID, SERVICE_UUID_16 ],
+    services: (string|number)[] = [
+        SERVICE_BATTERY_UUID,
+        SERVICE_UUID,
+        SERVICE_UUID_16,
+        DEPRECATED_SERVICE_UUID,
+        DEPRECATED_SERVICE_UUID_16,
+    ],
 ): Promise<ScanResult> => {
     let shouldStopScan = false
     let scanTimeout
@@ -109,6 +121,7 @@ export class PostCubeNode extends PostCube {
     static PlatformName = '@abandonware/noble'
 
     readonly peripheral: noble.Peripheral
+    private _version: PostCubeVersion
 
     get deviceId(): string {
         return this.peripheral?.id
@@ -116,6 +129,10 @@ export class PostCubeNode extends PostCube {
 
     get isConnected(): boolean {
         return this.peripheral?.state === 'connected'
+    }
+
+    get version(): PostCubeVersion {
+        return this._version
     }
 
     constructor(peripheral: noble.Peripheral) {
@@ -160,6 +177,10 @@ export class PostCubeNode extends PostCube {
 
         await this.peripheral.connectAsync()
 
+        this._version = await resolveVersionFromAvailableServices(
+            this.peripheral.services.map(service => service.uuid),
+        )
+
         isConnected = true
         if (timeout) {
             clearTimeout(timeout)
@@ -167,7 +188,6 @@ export class PostCubeNode extends PostCube {
         }
 
         this.onChange.dispatch(this)
-        // this.emit('change', this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
@@ -193,10 +213,9 @@ export class PostCubeNode extends PostCube {
         }
 
         this.onChange.dispatch(this)
-        // this.emit('change', this)
     }
 
-    async read(
+    async readV2(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,

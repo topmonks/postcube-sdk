@@ -58,10 +58,7 @@ const requestPostCube = async(namePrefix: string, mockConfig?: PostCubeMockConfi
         throw bleErrors.invalidPlatform(`Platform ${PostCubeBLE.platform} is unavailable`)
     }
 
-    const postCube: PostCube = await platformMap[PostCubeBLE.platform].requestPostCube(namePrefix, [
-        SERVICE_BATTERY_UUID,
-        platformMap[PostCubeBLE.platform].getServiceUUID(),
-    ], mockConfig)
+    const postCube: PostCube = await platformMap[PostCubeBLE.platform].requestPostCube(namePrefix, undefined, mockConfig)
 
     PostCubeLogger.debug({
         platform: PostCubeBLE.platform,
@@ -94,10 +91,7 @@ const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeM
         options: _options,
     }, 'Scanning for PostCube with options')
 
-    return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, [
-        SERVICE_BATTERY_UUID,
-        platformMap[PostCubeBLE.platform].getServiceUUID(),
-    ], mockConfig)
+    return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, undefined, mockConfig)
 }
 
 let platform: Platform

@@ -9,13 +9,21 @@ import {
     PACKET_LAST_INDEX,
     PACKET_LAST_TRUE,
     PACKET_LAST_FALSE,
+    DEPRECATED_CHAR_RESULTS_INDEX,
+    BOX_MAGIC,
 } from '../constants/bluetooth'
 import {
     getFutureEpoch,
     parseSecretCode,
+    uint32ToByteArray,
 } from '../helpers'
 import { hashSHA256 } from './hash'
-import { EncryptionKeys, encrypt, decrypt } from './encryption'
+import {
+    EncryptionKeys,
+    encryptV2,
+    decryptV2,
+    encryptV1,
+} from './encryption'
 import { generateCommandId } from './command'
 
 export type { EncryptionKeys }
@@ -54,7 +62,47 @@ export interface EncodingOptions {
     encryptionStrategy?: EncodingEncryptionStrategy
 }
 
-const resolveEncryptionStrategy = (options: EncodingOptions): EncodingEncryptionStrategy => {
+export const splitCommandV1 = async(buffer: Uint8Array, chunkSize: number = PACKET_SIZE): Promise<Uint8Array[]> => {
+    const result: Uint8Array[] = []
+
+    for (let offset = 0; offset < buffer.length; offset += chunkSize) {
+        result.push(buffer.subarray(offset, offset + chunkSize))
+    }
+
+    return result
+}
+
+export const parseResultV1 = async(response: DataView|ArrayBuffer, characteristicUUID: string|number) => {
+    const buffer = new Uint8Array(
+        response instanceof Buffer ?
+            response.buffer :
+            response as ArrayBuffer,
+    )
+
+    const index = DEPRECATED_CHAR_RESULTS_INDEX[characteristicUUID.toString()]
+    return buffer[index]
+}
+
+export const createCommandV1 = async(
+    privateKey: Uint8Array,
+    publicKey: Uint8Array,
+    expireAt: number = new Date().getTime() + 60000,
+    payload: Iterable<number> = [],
+) => {
+    const commandId = await generateCommandId()
+    const data = new Uint8Array([
+        ...uint32ToByteArray(commandId),
+        ...uint32ToByteArray(BOX_MAGIC),
+        ...uint32ToByteArray(expireAt),
+        ...payload,
+    ])
+
+    const encrypted = await encryptV1(data, privateKey, publicKey)
+
+    return encrypted
+}
+
+const resolveEncryptionStrategyV2 = (options: EncodingOptions): EncodingEncryptionStrategy => {
     if (!!options?.encryptionStrategy) {
         return options.encryptionStrategy
     }
@@ -75,7 +123,7 @@ const resolveEncryptionStrategy = (options: EncodingOptions): EncodingEncryption
     return null
 }
 
-const resolveCommandType = (command: Command): CommandType => {
+const resolveCommandTypeV2 = (command: Command): CommandType => {
     switch (true) {
     case typeof command[CommandType.setKey]   === 'object': return CommandType.setKey
     case typeof command[CommandType.unlock]   === 'object': return CommandType.unlock
@@ -87,7 +135,7 @@ const resolveCommandType = (command: Command): CommandType => {
     return null
 }
 
-const validateCommand = (command: Command, existingCommand: CommandType) => {
+const validateCommandV2 = (command: Command, existingCommand: CommandType) => {
     if (!existingCommand) {
         throw bleErrors.invalidCommand('Empty command')
     }
@@ -95,18 +143,18 @@ const validateCommand = (command: Command, existingCommand: CommandType) => {
     const commandDuplicate = Object.assign({}, command)
     delete commandDuplicate[existingCommand]
 
-    if (!!resolveCommandType(commandDuplicate)) {
+    if (!!resolveCommandTypeV2(commandDuplicate)) {
         throw bleErrors.invalidCommand('Command must specify exactly 1 action (setKey/unlock/timeSync/nuke/protect)')
     }
 }
 
-export const encodeCommand = async(command: Command, options: EncodingOptions = {}): Promise<Uint8Array> => {
+export const encodeCommandV2 = async(command: Command, options: EncodingOptions = {}): Promise<Uint8Array> => {
     const commandId = options?.commandId || await generateCommandId()
     const expireAt = options?.expireAt || await getFutureEpoch(24)
 
-    const commandType = await resolveCommandType(command)
+    const commandType = await resolveCommandTypeV2(command)
 
-    await validateCommand(command, commandType)
+    await validateCommandV2(command, commandType)
 
     let encodedPacket: Uint8Array = await protocol.encodePacket({ expireAt, ...command })
 
@@ -122,7 +170,7 @@ export const encodeCommand = async(command: Command, options: EncodingOptions = 
         options.keys.hashedSecretCode = await hashSHA256(payload)
     }
 
-    const encryptionStrategy: EncodingEncryptionStrategy = await resolveEncryptionStrategy(options)
+    const encryptionStrategy: EncodingEncryptionStrategy = await resolveEncryptionStrategyV2(options)
 
     if (encryptionStrategy === EncodingEncryptionStrategy.secretCode && commandType !== CommandType.setKey) {
         throw bleErrors.invalidAuthentication('Secret code can be used exclusively with `setKey` command')
@@ -137,7 +185,7 @@ export const encodeCommand = async(command: Command, options: EncodingOptions = 
             encryptedPacketPayload.payload = encodedPacket
             break
         case EncodingEncryptionStrategy.key:
-            const { encrypted, authTag } = await encrypt(encodedPacket, commandId, options.keys)
+            const { encrypted, authTag } = await encryptV2(encodedPacket, commandId, options.keys)
 
             encryptedPacketPayload.encryptionKeyId = options.keys.keyIndex
             encryptedPacketPayload.payload = encrypted
@@ -154,12 +202,12 @@ export const encodeCommand = async(command: Command, options: EncodingOptions = 
     return new Uint8Array(Buffer.from(encodedPacket))
 }
 
-export const encodeResult = async(commandId: number, value?: number, errorCode?: number): Promise<Uint8Array> => {
+export const encodeResultV2 = async(commandId: number, value?: number, errorCode?: number): Promise<Uint8Array> => {
     const encodedResult = await protocol.encodeResult({ commandId, value, errorCode })
     return encodedResult
 }
 
-export const chunkBuffer = async(buffer: ArrayBufferLike): Promise<DataView[]> => {
+export const chunkBufferV2 = async(buffer: ArrayBufferLike): Promise<DataView[]> => {
     const chunks: DataView[] = []
 
     for (let index = 0; index < buffer.byteLength; index += PACKET_SIZE - 1) {
@@ -182,7 +230,7 @@ export const chunkBuffer = async(buffer: ArrayBufferLike): Promise<DataView[]> =
     return chunks
 }
 
-export const parseBufferChunk = async(chunk: DataView): Promise<{
+export const parseBufferChunkV2 = async(chunk: DataView): Promise<{
     buffer: number[]
     isLast: boolean
 }> => {
@@ -209,14 +257,14 @@ export const parseBufferChunk = async(chunk: DataView): Promise<{
     return { buffer, isLast }
 }
 
-export const decodeChunkedResult = async(chunks: number[][]): Promise<protocol.Result> => {
+export const decodeChunkedResultV2 = async(chunks: number[][]): Promise<protocol.Result> => {
     const buffer = chunks.reduce((buffer, chunk) => [ ...chunk, ...buffer ], [])
     const encodedCommand = new Uint8Array(buffer)
 
     return await protocol.decodeResult(encodedCommand)
 }
 
-const decodeEncryptedPacket = async(buffer: Uint8Array): Promise<[ protocol.EncryptedPacket, protocol.Packet ]> => {
+const decodeEncryptedPacketV2 = async(buffer: Uint8Array): Promise<[ protocol.EncryptedPacket, protocol.Packet ]> => {
     let encryptedPacket: protocol.EncryptedPacket
 
     try {
@@ -238,7 +286,7 @@ const decodeEncryptedPacket = async(buffer: Uint8Array): Promise<[ protocol.Encr
     return [ encryptedPacket, null ]
 }
 
-export const decodeChunkedPacket = async(
+export const decodeChunkedPacketV2 = async(
     chunks: number[][],
     options: EncodingOptions = {},
 ): Promise<{
@@ -246,7 +294,7 @@ export const decodeChunkedPacket = async(
     encryptedPacket: protocol.EncryptedPacket
 }> => {
     const buffer = chunks.reduce((buffer, chunk) => [ ...buffer, ...chunk ], [])
-    let [ encryptedPacket, packet ] = await decodeEncryptedPacket(new Uint8Array(buffer))
+    let [ encryptedPacket, packet ] = await decodeEncryptedPacketV2(new Uint8Array(buffer))
 
     if (packet) {
         return { encryptedPacket, packet }
@@ -279,7 +327,7 @@ export const decodeChunkedPacket = async(
     //     throw bleErrors.invalidKeys('Unknown encryption key id')
     // }
 
-    const { decrypted } = await decrypt(
+    const decrypted = await decryptV2(
         encryptedPacket.payload,
         encryptedPacket.commandId,
         options.keys,

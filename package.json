@@ -1,6 +1,6 @@
 {
   "name": "@topmonks/postcube",
-  "version": "2.2.1",
+  "version": "3.0.0",
   "description": "PostCube public SDK",
   "author": "TopMonks <info@topmonks.com>",
   "license": "EPL-2.0",
@@ -20,10 +20,11 @@
   "scripts": {
     "visualize": "node scripts/visualize-state-machine.js && dot fsm.dot -Tpng -o fsm.png && rm fsm.dot",
     "protocol:generate:typescript": "pbjs protocol.proto --ts lib/protocol.pb.ts",
+    "build:browser:cjs": "tsc -p tsconfig.json",
     "build:browser:esm": "tsc -p tsconfig-esm.json",
     "build:browser:umd": "tsc -p tsconfig-umd.json",
     "prebuild:browser": "npm run protocol:generate:typescript",
-    "build:browser": "npm run build:browser:esm && npm run build:browser:umd",
+    "build:browser": "npm run build:browser:cjs && npm run build:browser:esm && npm run build:browser:umd",
     "prebuild:node": "npm run protocol:generate:typescript",
     "build:node": "tsc -p tsconfig.json",
     "watch": "npm run protocol:generate:typescript && tsc --watch",

@@ -6,7 +6,7 @@ import {
     NONCE,
 } from '../constants/bluetooth'
 import { sanitizePublicKey } from '../helpers'
-import { hashSharedSecret } from './hash'
+import { hashSHA256, hashSharedSecret } from './hash'
 
 const parsePrivateSubtleCryptoKey = async(privateKey: Iterable<number>, publicKey: Iterable<number>) => {
     const algorithm = {
@@ -51,7 +51,7 @@ const parseRawPrivateKeyData = (privateKeyBuffer: Uint8Array, publicKeyBuffer: U
     }
 }
 
-export const generateKeyPair = async(): Promise<{
+export const generateKeyPairV2 = async(): Promise<{
     privateKey: Uint8Array
     publicKey: Uint8Array
 }> => {
@@ -69,7 +69,7 @@ export const generateKeyPair = async(): Promise<{
     return { privateKey, publicKey }
 }
 
-export const cipher = async(
+export const cipherV2 = async(
     encryptionKey: Uint8Array,
     data: Iterable<number>,
     keys: EncryptionKeys,
@@ -94,7 +94,19 @@ export const cipher = async(
     }
 }
 
-export const deriveEncryptionKey = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
+export const deriveEncryptionKeyV1 = async(privateKey: Uint8Array|number[], publicKey: Uint8Array|number[]): Promise<Uint8Array> => {
+    const privateCryptoKey = await parsePrivateSubtleCryptoKey(privateKey, publicKey)
+    const publicCryptoKey = await parsePublicSubtleCryptoKey(publicKey)
+
+    const derivedKey = await window.crypto.subtle.deriveBits({
+        name: 'ECDH',
+        public: publicCryptoKey,
+    }, privateCryptoKey, 8 * 32)
+
+    return hashSHA256(new Uint8Array(derivedKey))
+}
+
+export const deriveEncryptionKeyV2 = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
     const publicKey =
         keys?.publicKey?.length === 64 ?
             [ 0x04, ...keys.publicKey ] :

@@ -4,12 +4,12 @@ import { expect } from 'chai'
 import { expectedEncryptionKeysMap, expectedEncryptionDataMap } from '../data'
 import { hashSHA256, hashSharedSecret } from '../../lib/encoding/hash'
 import {
-    generateKeyPair,
-    cipher,
-    decipher,
-    deriveEncryptionKey,
-    encrypt,
-    decrypt,
+    generateKeyPairV2,
+    deriveEncryptionKeyV2,
+    cipherV2,
+    decipherV2,
+    encryptV2,
+    decryptV2,
 } from '../../lib/encoding/encryption'
 
 export const runEncryptionTests = () => {
@@ -23,7 +23,7 @@ export const runEncryptionTests = () => {
     })
 
     it('should generate new Uint8Array key pair using `prime256v1`', async() => {
-        const { privateKey, publicKey } = await generateKeyPair()
+        const { privateKey, publicKey } = await generateKeyPairV2()
 
         expect(privateKey instanceof Uint8Array).to.be.true
         expect(publicKey instanceof Uint8Array).to.be.true
@@ -40,7 +40,7 @@ export const runEncryptionTests = () => {
             encryptionKey: expectedEncryptionKey,
         } = expectedEncryptionKeysMap.alpha
 
-        const encryptionKey = await deriveEncryptionKey(commandId, { privateKey, publicKey })
+        const encryptionKey = await deriveEncryptionKeyV2(commandId, { privateKey, publicKey })
 
         expect(encryptionKey instanceof Uint8Array).to.be.true
         expect(encryptionKey.length).to.equal(32)
@@ -62,7 +62,7 @@ export const runEncryptionTests = () => {
 
         const hashedSecretCode = await hashSHA256([ ...Buffer.from(boxId, 'utf-8'), ...secretCode ])
 
-        const { encrypted, authTag } = await cipher(encryptionKey, decryptedData, { hashedSecretCode })
+        const { encrypted, authTag } = await cipherV2(encryptionKey, decryptedData, { hashedSecretCode })
 
         expect(encrypted instanceof Buffer).to.be.true
         expect(authTag instanceof Buffer).to.be.true
@@ -90,7 +90,7 @@ export const runEncryptionTests = () => {
 
         const hashedSecretCode = await hashSHA256([ ...Buffer.from(boxId, 'utf-8'), ...secretCode ])
 
-        const { decrypted } = await decipher(encryptionKey, encryptedData, { hashedSecretCode })
+        const decrypted = await decipherV2(encryptionKey, encryptedData, { hashedSecretCode })
 
         expect(decrypted instanceof Buffer).to.be.true
 
@@ -115,7 +115,7 @@ export const runEncryptionTests = () => {
 
         const hashedSecretCode = await hashSHA256([ ...Buffer.from(boxId, 'utf-8'), ...secretCode ])
 
-        const { encrypted, authTag } = await encrypt(decryptedData, commandId, { privateKey, publicKey, hashedSecretCode })
+        const { encrypted, authTag } = await encryptV2(decryptedData, commandId, { privateKey, publicKey, hashedSecretCode })
 
         expect(encrypted instanceof Buffer).to.be.true
         expect(authTag instanceof Buffer).to.be.true
@@ -145,7 +145,7 @@ export const runEncryptionTests = () => {
 
         const hashedSecretCode = await hashSHA256([ ...Buffer.from(boxId, 'utf-8'), ...secretCode ])
 
-        const { decrypted } = await decrypt(encryptedData, commandId, { privateKey, publicKey, hashedSecretCode })
+        const decrypted = await decryptV2(encryptedData, commandId, { privateKey, publicKey, hashedSecretCode })
 
         expect(decrypted instanceof Buffer).to.be.true
 

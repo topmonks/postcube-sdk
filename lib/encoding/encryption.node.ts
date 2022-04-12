@@ -7,9 +7,9 @@ import {
     AUTH_TAG_SIZE,
 } from '../constants/bluetooth'
 import { sanitizePublicKey } from '../helpers'
-import { hashSharedSecret } from './hash'
+import { hashSHA256, hashSharedSecret } from './hash'
 
-export const generateKeyPair = async(): Promise<{
+export const generateKeyPairV2 = async(): Promise<{
     privateKey: Uint8Array
     publicKey: Uint8Array
 }> => {
@@ -25,7 +25,7 @@ export const generateKeyPair = async(): Promise<{
     return { privateKey, publicKey }
 }
 
-export const cipher = async(
+export const cipherV2 = async(
     encryptionKey: Uint8Array,
     data: Iterable<number>,
     keys: EncryptionKeys,
@@ -37,7 +37,7 @@ export const cipher = async(
 
     const crypto = await import('crypto')
 
-    const cipher = crypto.createCipheriv(
+    const cipher = await crypto.createCipheriv(
         'chacha20-poly1305',
         encryptionKey,
         NONCE,
@@ -57,7 +57,18 @@ export const cipher = async(
     }
 }
 
-export const deriveEncryptionKey = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
+export const deriveEncryptionKeyV1 = async(privateKey: Uint8Array|number[], publicKey: Uint8Array|number[]): Promise<Uint8Array> => {
+    const crypto = await import('crypto')
+
+    const curve = await crypto.createECDH('secp256k1')
+    curve.setPrivateKey(Buffer.from(privateKey))
+
+    const sharedSecret = await curve.computeSecret(Buffer.from(publicKey))
+
+    return hashSHA256(sharedSecret)
+}
+
+export const deriveEncryptionKeyV2 = async(commandId: number, keys: EncryptionKeys): Promise<Uint8Array> => {
     const publicKey =
         keys?.publicKey?.length === 64 ?
             [ 0x04, ...keys.publicKey ] :
