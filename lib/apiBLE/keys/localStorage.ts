@@ -3,6 +3,7 @@ import type { KeyPair, Keys } from './index'
 
 export const LS_DEVICE_PRIVATE_KEY_KEY           = 'device-private-key'
 export const LS_DEVICE_PUBLIC_KEY_KEY            = 'device-public-key'
+export const LS_DEVICE_KEY_LABEL                 = 'device-key-label'
 export const LS_DEVICE_KEY_INDEX_PREFIX          = 'device-key-index'
 export const LS_DEVICE_HASHED_SECRET_CODE_PREFIX = 'device-hashed-secret-code'
 
@@ -17,6 +18,12 @@ export const localStorageKeys: Keys = {
             `${LS_DEVICE_KEY_INDEX_PREFIX}:${boxId}`,
             keyIndex.toString(),
         )
+    },
+    async getDeviceKeyLabel() {
+        return window.localStorage.getItem(`${LS_DEVICE_KEY_LABEL}`)
+    },
+    async setDeviceKeyLabel(value: string) {
+        window.localStorage.setItem(`${exports.LS_DEVICE_KEY_LABEL}`, value)
     },
     async getDeviceHashedSecretCode(boxId: string) {
         const lsHashedSecretCode = window.localStorage.getItem(`${LS_DEVICE_HASHED_SECRET_CODE_PREFIX}:${boxId}`)

@@ -15,12 +15,12 @@ import {
     SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
-import { resolveVersionFromAvailableServices } from '../helpers'
+import { resolveVersionFromAvailableServices, templater, withTimeoutRace } from '../helpers'
 import {
     PostCube,
     ScanOptions,
     ScanResult,
-    StopNotifications,
+    Unwatch,
 } from './postcube'
 
 export const isEnabled = async(): Promise<boolean> => {
@@ -80,16 +80,19 @@ export class PostCubeWeb extends PostCube {
     static PlatformName = 'WebBluetooth'
 
     readonly device: BluetoothDevice
-    gattServer: BluetoothRemoteGATTServer
 
-    private _version: PostCubeVersion
+    private _version:                PostCubeVersion
+    private _detectVersionOnConnect: boolean = true
+    private _cachedServices:         Record<string, BluetoothRemoteGATTService> = {}
+    private _cachedCharacteristics:  Record<string, BluetoothRemoteGATTCharacteristic> = {}
+    private _enabledNotifications:   Record<string, boolean> = {}
 
     get deviceId(): string {
         return this.device?.id
     }
 
     get isConnected(): boolean {
-        return !!this.gattServer?.connected || !!this.gattServer?.device?.gatt?.connected
+        return !!this.device?.gatt?.connected || !!this.device?.gatt?.device?.gatt?.connected
     }
 
     get version(): PostCubeVersion {
@@ -100,110 +103,127 @@ export class PostCubeWeb extends PostCube {
         super(device?.name)
 
         this.device = device
-        this.gattServer = device?.gatt
+
+        if (typeof this?.device?.watchAdvertisements === 'function') {
+            this.device.addEventListener('advertisementreceived', event =>{
+                this.handleAdvertisementReceived(event)
+            })
+
+            this.device.watchAdvertisements()
+
+            this._detectVersionOnConnect = false
+        }
+
+        this.connect().then(async() => {
+            PostCubeLogger.info({}, this.tmpl(`Auto-connected to %id_platform%`))
+
+            await this.startResultNotificationsV1()
+        }).catch(err => {
+            PostCubeLogger.error({ err }, this.tmpl(`Failed to auto-connect to %id_platform%`))
+        })
+    }
+
+    protected tmpl(string: string) {
+        return templater({
+            platform: PostCubeWeb.PlatformName,
+            id: this.id,
+            version: this.version,
+        }).parse(string)
+    }
+
+    private async handleGattServerDisconnected(event: Event) {
+        PostCubeLogger.debug({ event }, this.tmpl(`Disconnected from %id_platform%`))
+
+        this.onChange.dispatch(this)
+    }
+
+    private async handleAdvertisementReceived(event: Event) {
+        console.log(this.tmpl('Advertisement received on %id_platform%'))
+        console.log('event:', event)
+        // Detect version
+    }
+
+    private async getService(serviceUUID: string): Promise<BluetoothRemoteGATTService> {
+        if (this._cachedServices[serviceUUID]) {
+            return this._cachedServices[serviceUUID]
+        }
+
+        this._cachedServices[serviceUUID] =
+            await this.device?.gatt?.getPrimaryService(serviceUUID)
+
+        return this._cachedServices[serviceUUID]
     }
 
     private async getCharacteristic(
         serviceUUID: string,
         characteristicUUID: string,
     ): Promise<BluetoothRemoteGATTCharacteristic> {
-        const service = await this.gattServer.getPrimaryService(serviceUUID)
-        return await service.getCharacteristic(characteristicUUID)
-    }
+        const cacheKey = `${serviceUUID}:${characteristicUUID}`
 
-    private async handleGattServerDisconnected(event: Event) {
-        PostCubeLogger.debug({ event }, `Disconnected from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+        if (this._cachedCharacteristics[cacheKey]) {
+            return this._cachedCharacteristics[cacheKey]
+        }
 
-        this.gattServer = null
-        this.onChange.dispatch(this)
+        const service = await this.getService(serviceUUID)
+
+        this._cachedCharacteristics[cacheKey] =
+            await service.getCharacteristic(characteristicUUID)
+
+        return this._cachedCharacteristics[cacheKey]
     }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(`Connecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+        PostCubeLogger.debug(this.tmpl(`Connecting to %id_platform%`))
 
-        let timeout
-        if (timeoutMs) {
-            timeout = setTimeout(() => {
-                if (this.isConnected) {
-                    return
-                }
-
-                throw bleErrors.timeout(`Timed out connecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
-            }, timeoutMs)
+        if (this.isConnected) {
+            PostCubeLogger.warn({ postCube: this }, this.tmpl(`Already connected to %id_platform%`))
+            return
         }
 
-        this.gattServer = await this.gattServer.connect()
+        await withTimeoutRace(async() => {
+            await this.device.gatt.connect()
 
-        this.gattServer.device.addEventListener('gattserverdisconnected', this.handleGattServerDisconnected)
+            this.device.gatt.device.addEventListener('gattserverdisconnected', this.handleGattServerDisconnected)
 
-        const primaryServices = await this.gattServer.getPrimaryServices()
-        this._version = await resolveVersionFromAvailableServices(
-            primaryServices.map(service => service.uuid),
-        )
+            if (this._detectVersionOnConnect) {
+                const primaryServices = await this.device.gatt.getPrimaryServices()
+    
+                this._version = await resolveVersionFromAvailableServices(
+                    primaryServices.map(service => service.uuid),
+                )
+            }
 
-        if (timeout) {
-            clearTimeout(timeout)
-            timeout = null
-        }
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out connecting to %id_platform%`)))
 
         this.onChange.dispatch(this)
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(`Disconnecting from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+        PostCubeLogger.debug(this.tmpl(`Disconnecting from %id_platform%`))
 
-        let timeout
-        if (timeoutMs) {
-            timeout = setTimeout(() => {
-                if (!this.isConnected) {
-                    return
-                }
-
-                throw bleErrors.timeout(`Timed out disconnecting to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
-            }, timeoutMs)
+        if (!this.isConnected || this.activeOperations > 0) {
+            return
         }
 
-        if (this.isConnected) {
-            await this.gattServer.disconnect()
-        }
-
-        this.gattServer = null
-        if (timeout) {
-            clearTimeout(timeout)
-            timeout = null
-        }
+        await withTimeoutRace(async() => {
+            await this.device.gatt.disconnect()
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out disconnecting from %id_platform%`)))
 
         this.onChange.dispatch(this)
     }
 
-    async readV2(
+    async read(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<DataView> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, `Reading value from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, this.tmpl(`Reading value from %id_platform%`))
 
-        let timeout, isDone = false
-        if (timeoutMs) {
-            timeout = setTimeout(() => {
-                if (isDone) {
-                    return
-                }
+        return await withTimeoutRace(async() => {
+            const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
 
-                throw bleErrors.timeout(`Timed out reading value from PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
-            }, timeoutMs)
-        }
-
-        const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
-        const value = await characteristic.readValue()
-
-        isDone = true
-        if (timeout) {
-            clearTimeout(timeout)
-            timeout = null
-        }
-
-        return value
+            return await characteristic.readValue()
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out reading value from %id_platform%`)))
     }
 
     async write(
@@ -212,76 +232,77 @@ export class PostCubeWeb extends PostCube {
         value: DataView,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<void> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, `Writing value to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, this.tmpl(`Writing value to PostCube %id_platform%`))
 
-        let timeout, isDone = false
-        if (timeoutMs) {
-            timeout = setTimeout(() => {
-                if (isDone) {
-                    return
-                }
+        await withTimeoutRace(async() => {
+            const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
 
-                throw bleErrors.timeout(`Timed out writing value to PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
-            }, timeoutMs)
-        }
-
-        const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
-        await characteristic.writeValue(value)
-
-        isDone = true
-        if (timeout) {
-            clearTimeout(timeout)
-            timeout = null
-        }
+            // TODO: rewrite write
+            // await characteristic.writeValueWithResponse(value)
+            // await characteristic.writeValueWithoutResponse(value)
+            await characteristic.writeValue(value)
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out writing value to %id_platform%`)))
     }
 
-    async listenForNotifications(
+    async startNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
+    ) {
+        PostCubeLogger.debug(
+            { serviceUUID, characteristicUUID },
+            this.tmpl(`Starting to listen for notifications on %id_platform%`),
+        )
+
+        await withTimeoutRace(async() => {
+            const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
+
+            await characteristic.startNotifications()
+
+            this._enabledNotifications[`${serviceUUID}:${characteristicUUID}`] = true
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out starting to listen for notifications on %id_platform%`)))
+
+        PostCubeLogger.info(
+            { serviceUUID, characteristicUUID },
+            this.tmpl(`Listening for notifications on %id_platform%`),
+        )
+    }
+
+    async watchNotifications(
         serviceUUID: string,
         characteristicUUID: string,
         listener: Listener<DataView>,
         timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
-    ): Promise<StopNotifications> {
+    ): Promise<Unwatch> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`,
+            this.tmpl(`Watching for notifications on %id_platform%`),
         )
 
-        let timeout, isListening = true
-        if (timeoutMs) {
-            timeout = setTimeout(() => {
-                if (!isListening) {
-                    return
-                }
-
-                stopListening()
-                throw bleErrors.timeout(`Timed out listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`)
-            }, timeoutMs)
+        if (!this._enabledNotifications[`${serviceUUID}:${characteristicUUID}`]) {
+            this.startNotifications(serviceUUID, characteristicUUID) // , timeoutMs)
         }
 
         const handleCharacteristicValueChanged = event => {
-            if (isListening && typeof listener === 'function') {
+            if (typeof listener === 'function') {
                 listener(event.target.value)
             }
         }
 
-        const characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
-        characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
+        let unwatch: Unwatch
+        await withTimeoutRace(async() => {
+            let characteristic = await this.getCharacteristic(serviceUUID, characteristicUUID)
 
-        const stopListening = () => {
-            PostCubeLogger.debug(
-                { serviceUUID, characteristicUUID },
-                `Stopped listening for value change on PostCube (ID: ${this.id}) [${PostCubeWeb.PlatformName}]`,
-            )
+            await characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
 
-            isListening = false
-            if (timeout) {
-                clearTimeout(timeout)
-                timeout = null
+            unwatch = async() => {
+                await characteristic.removeEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
+
+                characteristic = null
+                unwatch = null
             }
+        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out adding value change listener on %id_platform%`)))
 
-            characteristic.removeEventListener('characteristicvaluechanged', handleCharacteristicValueChanged)
-        }
-
-        return stopListening
+        return unwatch
     }
 }

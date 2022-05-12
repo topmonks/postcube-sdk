@@ -11,7 +11,8 @@ export const PACKET_LAST_FALSE          = 0x0
 export const COMMAND_ID_SIZE            = 4 // bytes = 32bit uint
 export const DEFAULT_TIMEOUT_CONNECT    = 7000
 export const DEFAULT_TIMEOUT_DISCONNECT = 3000
-export const DEFAULT_TIMEOUT_IO         = 4000
+export const DEFAULT_TIMEOUT_IO         = 20000 // 4000
+export const DEFAULT_TIMEOUT_I_AND_O    = 20000
 export const DEFAULT_TIMEOUT_LISTEN     = 10000
 export const AUTH_TAG_SIZE              = 16
 export const NONCE                      = new Uint8Array(12)
@@ -23,7 +24,7 @@ export const BOX_MAGIC = 0x0b0e0e0f
 
 export const SERVICE_UUID                           = '13668000-ede0-45de-87e8-77a6c2b8c0b6'
 export const SERVICE_UUID_16                        = 0x8000
-export const SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME = '00008000-0000-1000-8000-00805f9b34fb'
+export const SERVICE_UUID_16_BASE_0 = '00008000-0000-1000-8000-00805f9b34fb'
 export const SERVICE_UUID_BASE                      = [
     0xb6, 0xc0, 0xb8, 0xc2, 0xa6, 0x77, 0xe8, 0x87,
     0xde, 0x45, 0xe0, 0xed, 0x00, 0x00, 0x66, 0x13,

@@ -17,12 +17,12 @@ import {
     SERVICE_UUID_16,
 } from '../constants/bluetooth'
 import { bleErrors } from '../errors'
-import { resolveVersionFromAvailableServices } from '../helpers'
+import { resolveVersionFromAvailableServices, templater } from '../helpers'
 import {
     PostCube,
     ScanOptions,
     ScanResult,
-    StopNotifications,
+    Unwatch,
 } from './postcube'
 
 let nobleInstance
@@ -141,6 +141,14 @@ export class PostCubeNode extends PostCube {
         this.peripheral = peripheral
     }
 
+    protected tmpl(string: string) {
+        return templater({
+            platform: PostCubeNode.PlatformName,
+            id: this.id,
+            version: this.version,
+        }).parse(string)
+    }
+
     private async getCharacteristic(
         serviceUUID: string,
         characteristicUUID: string,
@@ -215,7 +223,7 @@ export class PostCubeNode extends PostCube {
         this.onChange.dispatch(this)
     }
 
-    async readV2(
+    async read(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
@@ -282,12 +290,20 @@ export class PostCubeNode extends PostCube {
         }
     }
 
-    async listenForNotifications(
+    async startNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
+    ) {
+        throw bleErrors.notSupported('Not Implemented, for now anyway')
+    }
+
+    async watchNotifications(
         serviceUUID: string,
         characteristicUUID: string,
         listener: Listener<DataView>,
         timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
-    ): Promise<StopNotifications> {
+    ): Promise<Unwatch> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeNode.PlatformName}]`,

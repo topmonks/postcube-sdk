@@ -1,18 +1,64 @@
 
 import { chunk } from 'lodash'
-import { DEPRECATED_SERVICE_UUID, DEPRECATED_SERVICE_UUID_16, PostCubeVersion, SERVICE_UUID, SERVICE_UUID_16, SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME } from './constants/bluetooth'
+import {
+    PostCubeVersion,
+    DEPRECATED_SERVICE_UUID,
+    DEPRECATED_SERVICE_UUID_16,
+    SERVICE_UUID,
+    SERVICE_UUID_16,
+    SERVICE_UUID_16_BASE_0,
+} from './constants/bluetooth'
 
 import { bleErrors } from './errors'
 
-export const sanitizePublicKey = (publicKey: Uint8Array) => {
-    // Uncompressed format adds 0x04 prefix at the beginning of the public key
-    // micro-ecc library accepts public keys without this prefix
-    // so remove it here
-    if (publicKey.length === 65 && publicKey[0] === 0x04) {
-        publicKey = publicKey.slice(1)
-    }
+export const uint32ToByteArray = (value: number): number[] => {
+    return [
+        (value >> 24) & 0xff,
+        (value >> 16) & 0xff,
+        (value >> 8) & 0xff,
+        value & 0xff,
+    ]
+}
 
-    return publicKey
+export const sleep = (timeoutMs: number) => {
+    return new Promise(resolve => setTimeout(resolve, timeoutMs))
+}
+
+export const withTimeoutRace = async<Result>(
+    procedure: () => Result,
+    timeoutMs: number,
+    timeoutError = bleErrors.timeout('Operation timed out'),
+): Promise<Result> => {
+    const result = await Promise.race([
+        new Promise<Result>(async(resolve, reject) => {
+            setTimeout(() => {
+                reject(timeoutError)
+            }, timeoutMs)
+        }),
+        new Promise<Result>(async(resolve, reject) => {
+            try {
+                const result = await procedure()
+                resolve(result)
+            } catch (err) {
+                reject(err)
+            }
+        }),
+    ])
+
+    return result
+}
+
+export const doISeriouslyHaveToUseSubtleCrypto = () => {
+    return (
+        typeof window !== 'undefined'
+        && typeof window?.crypto?.getRandomValues     === 'function'
+        && typeof window?.crypto?.subtle?.digest      === 'function'
+        && typeof window?.crypto?.subtle?.generateKey === 'function'
+        && typeof window?.crypto?.subtle?.encrypt     === 'function'
+        && typeof window?.crypto?.subtle?.deriveBits  === 'function'
+        && typeof window?.crypto?.subtle?.importKey   === 'function'
+        && typeof window?.crypto?.subtle?.exportKey   === 'function'
+    )
 }
 
 export const getFuture = (hours: number) => {
@@ -25,6 +71,21 @@ export const getFutureEpoch = (
     hours: number,
     millisecondPrecision: boolean = false,
 ) => getFuture(hours).getTime() / (millisecondPrecision ? 1 : 1000)
+
+export const generateTimestamp = (useMilliseconds: boolean = false): number[] => {
+    return uint32ToByteArray(Math.floor(Date.now() / (useMilliseconds ? 1 : 1000)))
+}
+
+export const sanitizePublicKey = (publicKey: Uint8Array) => {
+    // Uncompressed format adds 0x04 prefix at the beginning of the public key
+    // micro-ecc library accepts public keys without this prefix
+    // so remove it here
+    if (publicKey.length === 65 && publicKey[0] === 0x04) {
+        publicKey = publicKey.slice(1)
+    }
+
+    return publicKey
+}
 
 export const parseSecretCode = (secretCode: string|Iterable<number>): number[] => {
     if (typeof secretCode !== 'string') {
@@ -44,19 +105,6 @@ export const parseSecretCode = (secretCode: string|Iterable<number>): number[] =
     }
 
     return chunk(secretCode, 2).map(byte => parseInt(byte.join(''), 16))
-}
-
-export const uint32ToByteArray = (value: number): number[] => {
-    return [
-        (value >> 24) & 0xff,
-        (value >> 16) & 0xff,
-        (value >> 8) & 0xff,
-        value & 0xff,
-    ]
-}
-
-export const generateTimestamp = (useMilliseconds: boolean = false): number[] => {
-    return uint32ToByteArray(Math.floor(Date.now() / (useMilliseconds ? 1 : 1000)))
 }
 
 export const parsePostCubeName = (name: string): {
@@ -97,7 +145,7 @@ export const resolveVersionFromAvailableServices = (services: (string|number)[])
         case DEPRECATED_SERVICE_UUID_16.toString():
             return PostCubeVersion.v1
         case SERVICE_UUID:
-        case SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME:
+        case SERVICE_UUID_16_BASE_0:
         case SERVICE_UUID_16.toString():
             return PostCubeVersion.v2
         }
@@ -106,15 +154,27 @@ export const resolveVersionFromAvailableServices = (services: (string|number)[])
     return null
 }
 
-export const doISeriouslyHaveToUseSubtleCrypto = () => {
-    return (
-        typeof window !== 'undefined'
-        && typeof window?.crypto?.getRandomValues     === 'function'
-        && typeof window?.crypto?.subtle?.digest      === 'function'
-        && typeof window?.crypto?.subtle?.generateKey === 'function'
-        && typeof window?.crypto?.subtle?.encrypt     === 'function'
-        && typeof window?.crypto?.subtle?.deriveBits  === 'function'
-        && typeof window?.crypto?.subtle?.importKey   === 'function'
-        && typeof window?.crypto?.subtle?.exportKey   === 'function'
-    )
+const exprs = {
+    '%id_raw%': (value, expr, args) => value.replaceAll(expr, `${args.id}`),
+    '%platform_raw%': (value, expr, args) => value.replaceAll(expr, `${args.platform}`),
+    '%id%': (value, expr, args) => value.replaceAll(expr, `(ID: ${args.id})`),
+    '%platform%': (value, expr, args) => value.replaceAll(expr, `[${args.platform}]`),
+    '%id_platform%': (value, expr, args) => value.replaceAll(expr, `PostCube (ID: ${args.id}) [${args.platform}]`),
+    '%version%': (value, expr, args) => value.replaceAll(expr, `${args.version || '-'}`),
+}
+
+export const templater = (args: {
+    id?: string
+    platform?: string
+    version?: string
+}) => {
+    return {
+        parse(string: string) {
+            for (const expr in exprs) {
+                string = exprs[expr](string, expr, args)
+            }
+
+            return string
+        },
+    }
 }

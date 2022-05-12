@@ -20,8 +20,9 @@ export interface PostCubeLogger {
 const stdOut = new jSignal<object>()
 const stdErr = new jSignal<object>()
 
-const composeLog = (level: number, data: any, message?: string) => {
+const composeLog = (logLevel: number, data: any, message?: string) => {
     return {
+        logLevel,
         timestamp: new Date(),
         message: (!message && typeof data === 'string') ? data : message,
         data: (!message && typeof data === 'string') ? undefined : data,
@@ -50,9 +51,9 @@ export const PostCubeLogger: PostCubeLogger = {
                 _process.stdout.write(JSON.stringify(log) + '\n')
                 return
             }
-
-            console.debug(log)
         }
+
+        console.debug(log)
     },
     info(data: any, message?: string) {
         const log = composeLog(20, data, message)
@@ -64,9 +65,9 @@ export const PostCubeLogger: PostCubeLogger = {
                 _process.stdout.write(JSON.stringify(log) + '\n')
                 return
             }
-
-            console.log(log)
         }
+
+        console.log(log)
     },
     warn(data: any, message?: string) {
         const log = composeLog(30, data, message)
@@ -78,9 +79,9 @@ export const PostCubeLogger: PostCubeLogger = {
                 _process.stdout.write(JSON.stringify(log) + '\n')
                 return
             }
-
-            console.warn(log)
         }
+
+        console.warn(log)
     },
     error(data: any, message?: string) {
         const log = composeLog(40, data, message)
@@ -92,8 +93,8 @@ export const PostCubeLogger: PostCubeLogger = {
                 _process.stderr.write(JSON.stringify(log) + '\n')
                 return
             }
-
-            console.error(log)
         }
+
+        console.error(log)
     },
 }

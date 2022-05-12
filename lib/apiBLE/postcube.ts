@@ -4,6 +4,7 @@ import { jSignal, Listener } from 'jsignal'
 import * as protocol from '../protocol.pb'
 import { PostCubeLogger } from '../logger'
 import {
+    PostCubeVersion,
     SERVICE_UUID,
     CHAR_CONTROL_UUID,
     CHAR_RESULT_UUID,
@@ -14,7 +15,6 @@ import {
     SERVICE_UUID_16,
     CHAR_CONTROL_UUID_16,
     CHAR_RESULT_UUID_16,
-    PostCubeVersion,
     PACKET_SIZE,
     DEPRECATED_SERVICE_UUID,
     DEPRECATED_CHAR_SET_KEY_UUID,
@@ -23,9 +23,19 @@ import {
     DEPRECATED_CHAR_RESULT_UUID,
     DEPRECATED_CHAR_UNLOCK_UUID,
     DEPRECATED_CHAR_TIME_SYNC_UUID,
+    DEFAULT_TIMEOUT_I_AND_O,
+    DEFAULT_TIMEOUT_LISTEN,
 } from '../constants/bluetooth'
+import { LOW_BATTERY_THRESHOLD_CENT } from '../constants/box'
 import { bleErrors } from '../errors'
-import { generateTimestamp, parsePostCubeName, parseSecretCode, sanitizePublicKey, uint32ToByteArray } from '../helpers'
+import {
+    generateTimestamp,
+    parsePostCubeName,
+    parseSecretCode,
+    sanitizePublicKey,
+    uint32ToByteArray,
+    withTimeoutRace,
+} from '../helpers'
 import {
     splitCommandV1,
     parseResultV1,
@@ -39,7 +49,7 @@ import {
 import { hashSHA256 } from '../encoding/hash'
 import { Keys, localStorageKeys } from './keys'
 
-export type StopNotifications = () => void
+export type Unwatch = () => void
 
 export type EventChangeListener = (postCube: PostCube) => any
 export type EventResultListener = (value: DataView) => any
@@ -55,12 +65,12 @@ export interface ScanResult {
     stopScan(): void
 }
 
+export interface BatchOptions {
+    shouldDisconnect(success: boolean, err?: any): boolean|Promise<boolean>
+}
+
 export abstract class PostCube {
     static keys: Keys = localStorageKeys
-
-    // static EncryptionKeys: {
-    //     [postCubeId: string]: NonNullable<EncryptionKeys>
-    // } = {}
 
     readonly onChange: jSignal<PostCube> = new jSignal<PostCube>()
     readonly onResult: jSignal<DataView> = new jSignal<DataView>()
@@ -75,12 +85,56 @@ export abstract class PostCube {
     abstract readonly deviceId: string
     abstract readonly isConnected: boolean
 
+    private _activeOperations = 0
+    get activeOperations(): number {
+        return this._activeOperations
+    }
+
     constructor(name: string) {
         const { id, isDev } = parsePostCubeName(name)
 
         this.id = id
         this.name = name
         this.isDev = isDev
+    }
+
+    public async startResultNotificationsV1(timeoutMs: number = DEFAULT_TIMEOUT_LISTEN) {
+        await this.startNotifications(
+            DEPRECATED_SERVICE_UUID,
+            DEPRECATED_CHAR_RESULT_UUID,
+            timeoutMs,
+        )
+    }
+
+    async batchCommands<Result>(procedure: () => Result, options?: BatchOptions): Promise<Result> {
+        let _success = true, _err
+
+        try {
+            if (++this._activeOperations < 2) {
+                await this.connect()
+            }
+
+            return await procedure()
+        } catch (err) {
+            _success = false
+            _err = err
+
+            PostCubeLogger.error({
+                activeTransactions: this.activeOperations,
+                postCube: this,
+            }, this.tmpl(`Failed to execute batch of commands on %id_platform%`))
+
+            throw err
+        } finally {
+            --this._activeOperations
+
+            if (
+                typeof options?.shouldDisconnect !== 'function'
+                || await options.shouldDisconnect(_success, _err)
+            ) {
+                await this.disconnect()
+            }
+        }
     }
 
     private async checkEncryptionKeys() {
@@ -98,35 +152,26 @@ export abstract class PostCube {
         }
     }
 
-    // setKeyIndex(keyIndex: number|null): void {
-    //     (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).keyIndex = keyIndex
-    //     this.onChange.dispatch(this)
-    // }
-
-    // setPublicKey(publicKey: Uint8Array|number[]|null): void {
-    //     (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).publicKey = publicKey
-    //     this.onChange.dispatch(this)
-    // }
-
-    // setPrivateKey(privateKey: Uint8Array|number[]|null): void {
-    //     (PostCube.EncryptionKeys[this.id] || (PostCube.EncryptionKeys[this.id] = {})).privateKey = privateKey
-    //     this.onChange.dispatch(this)
-    // }
-
     private async readBatteryV1(): Promise<number> {
-        throw bleErrors.notSupported('Not right now... too lazy for that :D try some time later.. maybe')
+        PostCubeLogger.debug({ postCube: this }, this.tmpl(`readBatteryV1 on %id_platform%`))
 
-        // PostCubeLogger.debug(`readBattery from PostCube (ID: ${this.id})`)
+        const value = await this.read('battery_service', 'battery_level')
 
-        // // const batteryValue = await this.read(SERVICE_BATTERY_UUID, CHAR_BATTERY_LEVEL_UUID)
-        // const batteryValue = await this.read('battery_service', 'battery_level')
-        // console.log('batteryValue:', batteryValue)
+        PostCubeLogger.info({
+            value,
+            batteryPercent: value.getUint8(0),
+        }, this.tmpl(`Read battery result from %id_platform%`))
 
-        return 0
+        return value.getUint8(0)
     }
 
     private async readBatteryV2(): Promise<number> {
-        throw bleErrors.notSupported('Not right now... too lazy for that :D try some time later.. maybe')
+        PostCubeLogger.warn(
+            { postCube: this },
+            this.tmpl(`readBatteryV2 is not implemented; Mocking value from PostCube %id% for now %platform%`),
+        )
+
+        return LOW_BATTERY_THRESHOLD_CENT + 1
 
         // PostCubeLogger.debug(`readBattery from PostCube (ID: ${this.id})`)
 
@@ -150,27 +195,46 @@ export abstract class PostCube {
 
     private async writeCommandV1(command: ArrayBufferLike, characteristicUUID: string|number): Promise<void> {
         if (!characteristicUUID) {
-            throw bleErrors.unknownBLECharacteristic('writeCommandV1 has to have specified characteristic')
+            throw bleErrors.unknownBLECharacteristic('writeCommandV1 has to have a characteristic specified');
         }
+
 
         const chunks = await splitCommandV1(new Uint8Array(command), PACKET_SIZE)
 
-        PostCubeLogger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
+        PostCubeLogger.log(this.tmpl(`Sending command to PostCube %id% in ${chunks.length} packets %platform%`))
 
         for (const index in chunks) {
-            await this.write(DEPRECATED_SERVICE_UUID, characteristicUUID, new DataView(chunks[index]))
-            PostCubeLogger.log(`Packet ${Number(index) + 1}/${chunks.length} has been sent`)
+            const packetDataView = new DataView(chunks[index].buffer)
+
+            try {
+                await this.write(DEPRECATED_SERVICE_UUID, characteristicUUID, packetDataView)
+
+                PostCubeLogger.log({
+                    characteristicUUID,
+                    packetDataView,
+                    packetUint8Array: chunks[index],
+                }, this.tmpl(`Packet ${Number(index) + 1}/${chunks.length} has been sent to %id_platform%`))
+            } catch (err) {
+                PostCubeLogger.error({
+                    err,
+                    characteristicUUID,
+                    packetDataView,
+                    packetUint8Array: chunks[index],
+                }, this.tmpl(`Packet ${Number(index) + 1}/${chunks.length} failed to be written to %id_platform%`))
+
+                throw err
+            }
         }
     }
 
     private async writeCommandV2(command: ArrayBufferLike): Promise<void> {
         const chunks = await chunkBufferV2(command)
 
-        PostCubeLogger.log(`Sending command to PostCube (ID: ${this.id}) in ${chunks.length} packets`)
+        PostCubeLogger.log(`Sending command to PostCube %id% in ${chunks.length} packets`)
 
         for (const index in chunks) {
             await this.write(SERVICE_UUID, CHAR_CONTROL_UUID, chunks[index])
-            PostCubeLogger.log(`Packet ${Number(index) + 1}/${chunks.length} has been sent`)
+            PostCubeLogger.log(`Packet ${Number(index) + 1}/${chunks.length} has been sent to %id_platform%`)
         }
     }
 
@@ -193,58 +257,58 @@ export abstract class PostCube {
         throw bleErrors.notSupported('Invalid PostCube version')
     }
 
-    async writeCommandAndReadResultV1(command: ArrayBufferLike, characteristicUUID: string|number): Promise<number> {
-        this.connect()
+    public async writeCommandAndReadResultV1(command: ArrayBufferLike, characteristicUUID: string|number): Promise<number> {
+        const result = await this.batchCommands(() => {
+            let unwatch: Unwatch
 
-        return new Promise<number>(async(resolve, reject) => {
-            let stopNotifications: Listener<DataView>
+            return withTimeoutRace(() =>
+                new Promise<number>(async(resolve, reject) => {
+                    const handleNotification = async(value) => {
+                        PostCubeLogger.log({
+                            value,
+                            version: this.version,
+                        }, this.tmpl(`Receiving result from %id_platform%`))
 
-            const handleNotification = async(value: DataView) => {
-                PostCubeLogger.log({
-                    value,
-                    version: this.version,
-                }, `Receiving result from PostCube (ID: ${this.id})`)
+                        const parsedResult = await parseResultV1(value, characteristicUUID)
 
-                const parsedResult = await parseResultV1(value, characteristicUUID)
+                        PostCubeLogger.log({
+                            parsedResult,
+                            version: this.version,
+                        }, this.tmpl(`Result received from %id_platform%`))
 
-                PostCubeLogger.log({
-                    parsedResult,
-                    version: this.version,
-                }, `Result received from PostCube (ID: ${this.id})`)
+                        if (typeof unwatch === 'function') {
+                            await unwatch()
+                        }
 
-                stopNotifications()
-                resolve(parsedResult)
-            }
+                        resolve(parsedResult)
+                    }
 
-            try {
-                stopNotifications = await this.listenForNotifications(
-                    DEPRECATED_SERVICE_UUID_16,
-                    DEPRECATED_CHAR_RESULT_UUID,
-                    handleNotification,
-                )
+                    try {
+                        unwatch = await this.watchNotifications(DEPRECATED_SERVICE_UUID, DEPRECATED_CHAR_RESULT_UUID, handleNotification)
 
-                await this.writeCommand(command, characteristicUUID)
-            } catch (err) {
-                reject(err)
-            }
+                        await this.writeCommand(command, characteristicUUID)
+                    } catch (err) {
+                        reject(err)
+                    }
+                }), DEFAULT_TIMEOUT_I_AND_O)
         })
+
+        return result
     }
 
-    async writeCommandAndReadResultV2(command: ArrayBufferLike): Promise<protocol.Result> {
-        this.connect()
+    public async writeCommandAndReadResultV2(command: ArrayBufferLike): Promise<protocol.Result> {
+        // this.connect()
 
-        return new Promise<protocol.Result>(async(resolve, reject) => {
-            const chunks: number[][] = []
-
-            let stopNotifications: Listener<DataView>
-
-            const handleNotification = async(value: DataView) => {
+        return new Promise(async(resolve, reject) => {
+            const chunks = []
+            let stopNotifications
+            const handleNotification = async(value) => {
                 const { buffer, isLast } = await parseBufferChunkV2(value)
 
                 PostCubeLogger.log({
                     buffer, isLast,
                     version: this.version,
-                }, `Receiving result packet from PostCube (ID: ${this.id})`)
+                }, this.tmpl(`Receiving result packet from %id_platform%`))
 
                 chunks.push(buffer)
 
@@ -255,20 +319,14 @@ export abstract class PostCube {
                         PostCubeLogger.log({
                             result,
                             version: this.version,
-                        }, `Result received from PostCube (ID: ${this.id}) has been decoded`)
-
+                        }, this.tmpl(`Result received from PostCube %id% has been decoded %platform%`))
                         resolve(result)
                     }).catch(reject)
                 }
             }
 
             try {
-                stopNotifications = await this.listenForNotifications(
-                    SERVICE_UUID_16,
-                    CHAR_RESULT_UUID_16,
-                    handleNotification,
-                )
-
+                stopNotifications = await this.watchNotifications(SERVICE_UUID_16, CHAR_RESULT_UUID_16, handleNotification)
                 await this.writeCommand(command)
             } catch (err) {
                 reject(err)
@@ -276,112 +334,113 @@ export abstract class PostCube {
         })
     }
 
-    async writeSyncTime(timestamp: number): Promise<undefined|number> {
+    public async writeSyncTime(timestamp: number): Promise<undefined|number> {
         PostCubeLogger.debug({
             timestamp,
             version: this.version,
-        }, `writeSyncTime to PostCube (ID: ${this.id})`)
+        }, this.tmpl(`writeSyncTime to %id_platform%`))
 
         const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
+
         const keyIndex = await PostCube.keys.getDeviceKeyIndex(this.id)
         const hashedSecretCode = await PostCube.keys.getDeviceHashedSecretCode(this.id)
 
-        let command
         switch (this.version) {
-        case PostCubeVersion.v1:
-            const encrypted = await createCommandV1(privateKey, publicKey, Math.floor(Date.now() / 1000), [])
+            case PostCubeVersion.v1:
+                const encrypted = await createCommandV1(privateKey, publicKey, Math.floor(Date.now() / 1000), [])
 
-            if (isNaN(keyIndex)) {
-                PostCubeLogger.warn({ timestamp, keyIndex }, `Cannot writeSyncTime to PostCube (ID: ${this.id}) without keyIndex`)
-                return
-            }
+                if (isNaN(keyIndex)) {
+                    PostCubeLogger.warn({ timestamp, keyIndex }, this.tmpl(`Cannot writeSyncTime to PostCube %id% without keyIndex %platform%`))
+                    return
+                }
 
-            command = new Uint8Array([ keyIndex, ...encrypted ])
+                return this.writeCommandAndReadResultV1(
+                    new Uint8Array([ keyIndex, ...encrypted ]),
+                    DEPRECATED_CHAR_TIME_SYNC_UUID,
+                )
+            case PostCubeVersion.v2:
+                await this.checkEncryptionKeys()
 
-            return this.writeCommandAndReadResultV1(command, DEPRECATED_CHAR_TIME_SYNC_UUID)
-        case PostCubeVersion.v2:
-            await this.checkEncryptionKeys()
+                const command = await encodeCommandV2({
+                    timeSync: { timestamp },
+                }, {
+                    keys: {
+                        privateKey,
+                        publicKey,
+                        keyIndex,
+                        hashedSecretCode,
+                    },
+                })
+                const result = await this.writeCommandAndReadResultV2(command)
+                if (result.value === RES_OK) {
+                    PostCubeLogger.debug({ timestamp }, this.tmpl(`writeSyncTime was successfully executed on %id_platform%`))
+                    return
+                }
 
-            command = await encodeCommandV2({
-                timeSync: { timestamp },
-            }, {
-                keys: {
-                    privateKey,
-                    publicKey,
-                    keyIndex,
-                    hashedSecretCode,
-                },
-            })
-
-            const result = await this.writeCommandAndReadResultV2(command)
-
-            if (result.value === RES_OK) {
-                PostCubeLogger.debug({ timestamp }, `writeSyncTime was successfully executed on PostCube (ID: ${this.id})`)
-                return
-            }
-
-            PostCubeLogger.error({ timestamp, result }, `writeSyncTime failed to execute on PostCube (ID: ${this.id})`)
-            throw RESPONSE_MESSAGES[result.value]
+                PostCubeLogger.error({ timestamp, result }, this.tmpl(`writeSyncTime failed to execute on %id_platform%`))
+                throw RESPONSE_MESSAGES[result.value]
         }
 
         throw bleErrors.notSupported('Invalid PostCube Version')
     }
 
-    async writeUnlock(lockId: number = 0): Promise<undefined|number> {
+    public async writeUnlock(lockId: number = 0): Promise<undefined|number> {
         PostCubeLogger.debug({
             lockId,
             version: this.version,
-        }, `writeUnlock to PostCube (ID: ${this.id})`)
+        }, this.tmpl(`writeUnlock to %id_platform%`))
 
         const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
         const keyIndex = await PostCube.keys.getDeviceKeyIndex(this.id)
         const hashedSecretCode = await PostCube.keys.getDeviceHashedSecretCode(this.id)
 
-        let command: Uint8Array
         switch (this.version) {
-        case PostCubeVersion.v1:
-            if (lockId > 0) {
-                PostCubeLogger.warn({
-                    lockId,
-                }, `Attempting to create unlock command for multibox partition on PostCube V1 (ID: ${this.id}); lockId will be ignored`)
-            }
+            case PostCubeVersion.v1:
+                if (lockId > 0) {
+                    PostCubeLogger.warn({ lockId }, this.tmpl(`Attempting to create unlock command for multibox partition on PostCube V1 %id%; lockId will be ignored`))
+                }
 
-            const encrypted = await createCommandV1(privateKey, publicKey, Math.floor((Date.now() + 60000) / 1000), [])
+                const encrypted = await createCommandV1(privateKey, publicKey, Math.floor((Date.now() + 60000) / 1000), [])
 
-            command = new Uint8Array([ keyIndex, ...encrypted ])
+                return this.writeCommandAndReadResultV1(
+                    new Uint8Array([ keyIndex, ...encrypted ]),
+                    DEPRECATED_CHAR_UNLOCK_UUID,
+                )
+            case PostCubeVersion.v2:
+                const command = await encodeCommandV2({
+                    unlock: { lockId },
+                }, {
+                    keys: {
+                        privateKey,
+                        publicKey,
+                        keyIndex,
+                        hashedSecretCode,
+                    },
+                })
 
-            return this.writeCommandAndReadResultV1(command, DEPRECATED_CHAR_UNLOCK_UUID)
-        case PostCubeVersion.v2:
-            command = await encodeCommandV2({
-                unlock: { lockId },
-            }, {
-                keys: {
-                    privateKey,
-                    publicKey,
-                    keyIndex,
-                    hashedSecretCode,
-                },
-            })
+                const resultV2 = await this.writeCommandAndReadResultV2(command)
 
-            const resultV2 = await this.writeCommandAndReadResultV2(command)
+                if (resultV2.value === RES_OK) {
+                    PostCubeLogger.debug({
+                        lockId,
+                        result: resultV2,
+                    }, this.tmpl(`writeUnlock was successfully executed on %id_platform%`))
 
-            if (resultV2.value === RES_OK) {
-                PostCubeLogger.debug({
+                    return resultV2.value
+                }
+
+                PostCubeLogger.error({
                     lockId,
                     result: resultV2,
-                }, `writeUnlock was successfully executed on PostCube (ID: ${this.id})`)
-                return resultV2.value
-            }
+                }, this.tmpl(`writeUnlock failed to execute on %id_platform%`))
 
-            PostCubeLogger.error({
-                lockId,
-                result: resultV2,
-            }, `writeUnlock failed to execute on PostCube (ID: ${this.id})`)
-            throw RESPONSE_MESSAGES[resultV2.value]
+                throw RESPONSE_MESSAGES[resultV2.value]
         }
+
+        throw bleErrors.notSupported('Invalid PostCube Version')
     }
 
-    async writeDeviceKey(
+    public async writeDeviceKey(
         secretCode: string,
         keyIndex: number,
         publicKey: Uint8Array|number[],
@@ -390,142 +449,148 @@ export abstract class PostCube {
         PostCubeLogger.debug({
             secretCode, keyIndex, publicKey, expireAt,
             version: this.version,
-        }, `writeDeviceKey to PostCube (ID: ${this.id})`)
+        }, this.tmpl(`writeDeviceKey to %id_platform%`))
 
         switch (this.version) {
-        case PostCubeVersion.v1:
-            const sanitizedPublicKey = sanitizePublicKey(
-                publicKey instanceof Uint8Array ?
+            case PostCubeVersion.v1:
+                const sanitizedPublicKey = await sanitizePublicKey(
+                    publicKey instanceof Uint8Array ?
+                        publicKey :
+                        new Uint8Array(publicKey),
+                )
+
+                const timestamp = generateTimestamp(false);
+                const hash = await hashSHA256([
+                    ...sanitizedPublicKey,
+                    ...timestamp,
+                    ...parseSecretCode(secretCode),
+                ])
+
+                return this.writeCommandAndReadResultV1(new Uint8Array([
+                    ...sanitizedPublicKey,
+                    ...timestamp,
+                    ...hash,
+                ]), DEPRECATED_CHAR_SET_KEY_UUID)
+            case PostCubeVersion.v2:
+                const _publicKey = publicKey instanceof Uint8Array ?
                     publicKey :
-                    new Uint8Array(publicKey),
-            )
+                    new Uint8Array(publicKey)
 
-            const timestamp = generateTimestamp(false)
-            const hash = await hashSHA256([
-                ...sanitizedPublicKey,
-                ...timestamp,
-                ...parseSecretCode(secretCode),
-            ])
+                const command = await encodeCommandV2({
+                    setKey: {
+                        keyIndex,
+                        expireAt,
+                        publicKey: _publicKey,
+                    },
+                }, { secretCode })
 
-            return this.writeCommandAndReadResultV1(new Uint8Array([
-                ...publicKey,
-                ...timestamp,
-                ...hash,
-            ]), DEPRECATED_CHAR_SET_KEY_UUID)
-        case PostCubeVersion.v2:
-            const _publicKey = publicKey instanceof Uint8Array ?
-                publicKey :
-                new Uint8Array(publicKey)
+                const resultV2 = await this.writeCommandAndReadResultV2(command)
+                if (resultV2.value === RES_OK) {
+                    PostCubeLogger.debug({
+                        secretCode, keyIndex, publicKey, expireAt,
+                        result: resultV2,
+                    }, this.tmpl(`writeSetKey was successfully executed on %id_platform%`))
 
-            const command = await encodeCommandV2({
-                setKey: {
-                    keyIndex,
-                    expireAt,
-                    publicKey: _publicKey,
-                },
-            }, { secretCode })
+                    return resultV2.value
+                }
 
-            const resultV2 = await this.writeCommandAndReadResultV2(command)
-
-            if (resultV2.value === RES_OK) {
-                PostCubeLogger.debug({
+                PostCubeLogger.error({
                     secretCode, keyIndex, publicKey, expireAt,
                     result: resultV2,
-                }, `writeSetKey was successfully executed on PostCube (ID: ${this.id})`)
-                return resultV2.value
-            }
+                }, this.tmpl(`writeSetKey failed to execute on %id_platform%`))
 
-            PostCubeLogger.error({
-                secretCode, keyIndex, publicKey, expireAt,
-                result: resultV2,
-            }, `writeSetKey failed to execute on PostCube (ID: ${this.id})`)
-            throw RESPONSE_MESSAGES[resultV2.value]
+                throw RESPONSE_MESSAGES[resultV2.value]
         }
 
         throw bleErrors.notSupported('Invalid PostCube Version')
     }
 
-    async writeAccountKey(publicKey: Uint8Array|number[], secretCode: string): Promise<undefined|number> {
+    public async writeAccountKey(publicKey: Uint8Array|number[], secretCode: string): Promise<undefined|number> {
         PostCubeLogger.debug({
             publicKey, secretCode,
             version: this.version,
-        }, `writeAccountKey to PostCube (ID: ${this.id})`)
+        }, this.tmpl(`writeAccountKey to %id_platform%`))
 
         switch (this.version) {
-        case PostCubeVersion.v1:
-            const sanitizedPublicKey = sanitizePublicKey(
-                publicKey instanceof Uint8Array ?
-                    publicKey :
-                    new Uint8Array(publicKey),
-            )
+            case PostCubeVersion.v1:
+                const sanitizedPublicKey = await sanitizePublicKey(
+                    publicKey instanceof Uint8Array ?
+                        publicKey :
+                        new Uint8Array(publicKey),
+                )
 
-            const timestamp = generateTimestamp(false)
-            const hash = await hashSHA256([
-                ...sanitizedPublicKey,
-                ...timestamp,
-                ...parseSecretCode(secretCode),
-            ])
+                const timestamp = generateTimestamp(false)
+                const hash = await hashSHA256([
+                    ...sanitizedPublicKey,
+                    ...timestamp,
+                    ...parseSecretCode(secretCode),
+                ])
 
-            return this.writeCommandAndReadResultV1(new Uint8Array([
-                ...sanitizedPublicKey,
-                ...timestamp,
-                ...hash,
-            ]), DEPRECATED_CHAR_SAVE_ACC_UUID)
-        case PostCubeVersion.v2:
-            throw bleErrors.notSupported('Set account key is not supported in PostCube V2')
+                return this.writeCommandAndReadResultV1(new Uint8Array([
+                    ...sanitizedPublicKey,
+                    ...timestamp,
+                    ...hash,
+                ]), DEPRECATED_CHAR_SAVE_ACC_UUID)
+            case PostCubeVersion.v2:
+                throw bleErrors.notSupported('Set account key is not supported in PostCube V2')
         }
 
         throw bleErrors.notSupported('Invalid PostCube Version')
     }
 
-    async writeFactoryReset(): Promise<undefined|number> {
+    public async writeFactoryReset(): Promise<undefined|number> {
         PostCubeLogger.debug({
             version: this.version,
-        }, `writeFactoryReset to PostCube (ID: ${this.id})`)
+        }, this.tmpl(`writeFactoryReset to %id_platform%`))
 
         switch (this.version) {
-        case PostCubeVersion.v1:
-            throw bleErrors.notSupported('Factory reset is not supported in PostCube V1')
-        case PostCubeVersion.v2:
-            await this.checkEncryptionKeys()
+            case PostCubeVersion.v1:
+                throw bleErrors.notSupported('Factory reset is not supported in PostCube V1')
+            case PostCubeVersion.v2:
+                await this.checkEncryptionKeys()
 
-            const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
-            const keyIndex = await PostCube.keys.getDeviceKeyIndex(this.id)
-            const hashedSecretCode = await PostCube.keys.getDeviceHashedSecretCode(this.id)
+                const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
+                const keyIndex = await PostCube.keys.getDeviceKeyIndex(this.id)
+                const hashedSecretCode = await PostCube.keys.getDeviceHashedSecretCode(this.id)
 
-            const command = await encodeCommandV2({
-                nuke: {},
-            }, {
-                keys: {
-                    privateKey,
-                    publicKey,
-                    keyIndex,
-                    hashedSecretCode,
-                },
-            })
+                const command = await encodeCommandV2({
+                    nuke: {},
+                }, {
+                    keys: {
+                        privateKey,
+                        publicKey,
+                        keyIndex,
+                        hashedSecretCode,
+                    },
+                })
 
-            const resultV2 = await this.writeCommandAndReadResultV2(command)
+                const resultV2 = await this.writeCommandAndReadResultV2(command)
 
-            if (resultV2.value === RES_OK) {
-                PostCubeLogger.debug({
+                if (resultV2.value === RES_OK) {
+                    PostCubeLogger.debug({
+                        result: resultV2,
+                    }, this.tmpl(`writeFactoryReset was successfully executed on %id_platform%`))
+
+                    return resultV2.value
+                }
+
+                PostCubeLogger.error({
                     result: resultV2,
-                }, `writeFactoryReset was successfully executed on PostCube (ID: ${this.id})`)
-                return resultV2.value
-            }
+                }, this.tmpl(`writeFactoryReset failed to execute on %id_platform%`))
 
-            PostCubeLogger.error({
-                result: resultV2,
-            }, `writeFactoryReset failed to execute on PostCube (ID: ${this.id})`)
-            throw RESPONSE_MESSAGES[resultV2.value]
+                throw RESPONSE_MESSAGES[resultV2.value]
         }
 
         throw bleErrors.notSupported('Invalid PostCube Version')
     }
+
+    // Template string (see lib/helpers.ts)
+    protected abstract tmpl(string: string): string
 
     abstract connect(timeoutMs?: number): Promise<void>
     abstract disconnect(timeoutMs?: number): Promise<void>
 
-    abstract readV2(
+    abstract read(
         serviceUUID: string|number,
         characteristicUUID: string|number,
         timeoutMs?: number,
@@ -538,10 +603,16 @@ export abstract class PostCube {
         timeoutMs?: number,
     ): Promise<void>
 
-    abstract listenForNotifications(
+    abstract startNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs?: number,
+    ): Promise<void>
+
+    abstract watchNotifications(
         serviceUUID: string|number,
         characteristicUUID: string|number,
         listener: Listener<DataView>,
         timeoutMs?: number,
-    ): Promise<StopNotifications>
+    ): Promise<Unwatch>
 }

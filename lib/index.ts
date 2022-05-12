@@ -7,15 +7,17 @@ export {
     BleErrorCode,
 } from './errors'
 export {
-    sanitizePublicKey,
+    uint32ToByteArray,
+    sleep,
+    withTimeoutRace,
+    doISeriouslyHaveToUseSubtleCrypto,
     getFuture,
     getFutureEpoch,
+    sanitizePublicKey,
     parseSecretCode,
-    uint32ToByteArray,
-    generateTimestamp,
     parsePostCubeName,
     resolveVersionFromAvailableServices,
-    doISeriouslyHaveToUseSubtleCrypto,
+    templater,
 } from './helpers'
 export { PostCubeLogger } from './logger'
 
@@ -138,7 +140,7 @@ export {
     SERVICE_BATTERY_UUID,
     BOX_MAGIC,
     SERVICE_UUID_16,
-    SERVICE_UUID_16_FULL_WITH_BASE_FUCK_ME,
+    SERVICE_UUID_16_BASE_0,
     SERVICE_UUID_BASE,
     SERVICE_UUID,
     CHAR_CONTROL_UUID,

@@ -12,11 +12,12 @@ import {
     SERVICE_UUID,
 } from '../../constants/bluetooth'
 import { bleErrors } from '../../errors'
+import { templater } from '../../helpers'
 import {
     PostCube,
     ScanOptions,
     ScanResult,
-    StopNotifications,
+    Unwatch,
 } from '../postcube'
 import {
     validateCharacteristic,
@@ -161,6 +162,14 @@ export class PostCubeMock extends PostCube {
         this.deviceConfig = deviceConfig
     }
 
+    protected tmpl(string: string) {
+        return templater({
+            platform: PostCubeMock.PlatformName,
+            id: this.id,
+            version: this.version,
+        }).parse(string)
+    }
+
     async getCharacteristic(serviceUUID: string, characteristicUUID: string): Promise<PostCubeMockCharacteristic> {
         await validateCharacteristic(serviceUUID, characteristicUUID)
 
@@ -228,7 +237,7 @@ export class PostCubeMock extends PostCube {
         }
     }
 
-    async readV2(
+    async read(
         serviceUUID: string,
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
@@ -287,7 +296,20 @@ export class PostCubeMock extends PostCube {
         }
     }
 
-    async listenForNotifications(serviceUUID: string, characteristicUUID: string, listener: Listener<DataView>, timeoutMs?: number): Promise<StopNotifications> {
+    async startNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        timeoutMs: number = DEFAULT_TIMEOUT_LISTEN,
+    ) {
+        throw bleErrors.notSupported('Not Implemented, for now anyway')
+    }
+
+    async watchNotifications(
+        serviceUUID: string,
+        characteristicUUID: string,
+        listener: Listener<DataView>,
+        timeoutMs?: number,
+    ): Promise<Unwatch> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
             `Listening for value change on PostCube (ID: ${this.id}) [${PostCubeMock.PlatformName}]`,

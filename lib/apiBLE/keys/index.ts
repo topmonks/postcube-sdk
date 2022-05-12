@@ -13,6 +13,9 @@ export interface Keys {
     getDeviceKeyIndex(boxId: string): Promise<number|null>
     setDeviceKeyIndex(boxId: string, keyIndex: number): Promise<any>
 
+    getDeviceKeyLabel(): Promise<string|null>
+    setDeviceKeyLabel(deviceKeyLabel: string): Promise<any>
+
     getDeviceHashedSecretCode(boxId: string): Promise<Uint8Array|null>
     setDeviceHashedSecretCode(boxId: string, hashedSecretCode: Uint8Array): Promise<any>
 

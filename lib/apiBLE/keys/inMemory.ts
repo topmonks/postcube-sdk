@@ -8,6 +8,7 @@ export const LS_DEVICE_KEY_INDEX_PREFIX = 'device-key-index'
 const deviceKeyIndexes: { [boxId: string]: number } = {}
 const deviceHashedSecretCodes: { [boxId: string]: Uint8Array } = {}
 let deviceKeyPair: KeyPair = null
+let deviceKeyLabel = null
 
 export const inMemoryKeys: Keys = {
     async getDeviceKeyIndex(boxId: string): Promise<number|null> {
@@ -19,6 +20,12 @@ export const inMemoryKeys: Keys = {
     },
     async setDeviceKeyIndex(boxId: string, keyIndex: number) {
         deviceKeyIndexes[boxId] = keyIndex
+    },
+    async getDeviceKeyLabel() {
+        return deviceKeyLabel
+    },
+    async setDeviceKeyLabel(value: string) {
+        deviceKeyLabel = value
     },
     async getDeviceHashedSecretCode(boxId: string) {
         if (deviceHashedSecretCodes[boxId]) {
