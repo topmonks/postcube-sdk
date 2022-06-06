@@ -34,7 +34,6 @@
     "test:spec": "MOCHA_REPORTER=spec npm run test:mocha"
   },
   "dependencies": {
-    "@abandonware/noble": "^1.9.2-15",
     "@capacitor-community/bluetooth-le": "^1.6.0",
     "@capacitor/core": "^3.3.2",
     "buffer": "^6.0.3",
