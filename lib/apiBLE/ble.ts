@@ -13,21 +13,24 @@ import type { PostCubeMockConfig } from './mock'
 
 export enum Platform {
     web       = 'web',
-    capacitor = 'capacitor',
+    // capacitor = 'capacitor',
+    cordova   = 'cordova',
     node      = 'node',
     mock      = 'mock',
 }
 
 import * as postcubeMock from './mock'
 import * as postcubeWeb from './postcube.web'
-import * as postcubeCapacitor from './postcube.capacitor'
+// import * as postcubeCapacitor from './postcube.capacitor'
+import * as postcubeCordova from './postcube.cordova'
 import * as postcubeNode from './postcube.node'
 
 const platformMap: {
     [platform in Platform]: any
 } = {
     [Platform.web]:       postcubeWeb,
-    [Platform.capacitor]: postcubeCapacitor,
+    // [Platform.capacitor]: postcubeCapacitor,
+    [Platform.cordova]:   postcubeCordova,
     [Platform.node]:      postcubeNode,
     [Platform.mock]:      postcubeMock,
 }

@@ -4,11 +4,13 @@ export enum PostCubeVersion {
     v2 = 'v2',
 }
 
+export const MAX_PACKET_SIZE            = 20
 export const PACKET_SIZE                = 20
-export const PACKET_LAST_INDEX          = 0x0
+export const PACKET_LAST_INDEX          = 0x0 // Yeah. The last index is actually the first index
 export const PACKET_LAST_TRUE           = 0x1
 export const PACKET_LAST_FALSE          = 0x0
 export const COMMAND_ID_SIZE            = 4 // bytes = 32bit uint
+export const DEFAULT_TIMEOUT_SCAN       = 60000
 export const DEFAULT_TIMEOUT_CONNECT    = 7000
 export const DEFAULT_TIMEOUT_DISCONNECT = 3000
 export const DEFAULT_TIMEOUT_IO         = 20000 // 4000

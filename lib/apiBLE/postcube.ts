@@ -15,7 +15,7 @@ import {
     SERVICE_UUID_16,
     CHAR_CONTROL_UUID_16,
     CHAR_RESULT_UUID_16,
-    PACKET_SIZE,
+    MAX_PACKET_SIZE,
     DEPRECATED_SERVICE_UUID,
     DEPRECATED_CHAR_SET_KEY_UUID,
     DEPRECATED_CHAR_SAVE_ACC_UUID,
@@ -157,12 +157,14 @@ export abstract class PostCube {
 
         const value = await this.read('battery_service', 'battery_level')
 
-        PostCubeLogger.info({
-            value,
-            batteryPercent: value.getUint8(0),
-        }, this.tmpl(`Read battery result from %id_platform%`))
+        // Ugly
+        const batteryPercent = value instanceof DataView ?
+            value.getUint8(0) :
+            value[0]
 
-        return value.getUint8(0)
+        PostCubeLogger.info({ batteryPercent, value }, this.tmpl(`Read battery result from %id_platform%`))
+
+        return batteryPercent
     }
 
     private async readBatteryV2(): Promise<number> {
@@ -199,7 +201,7 @@ export abstract class PostCube {
         }
 
 
-        const chunks = await splitCommandV1(new Uint8Array(command), PACKET_SIZE)
+        const chunks = await splitCommandV1(new Uint8Array(command), MAX_PACKET_SIZE)
 
         PostCubeLogger.log(this.tmpl(`Sending command to PostCube %id% in ${chunks.length} packets %platform%`))
 
@@ -594,7 +596,7 @@ export abstract class PostCube {
         serviceUUID: string|number,
         characteristicUUID: string|number,
         timeoutMs?: number,
-    ): Promise<DataView>
+    ): Promise<DataView|ArrayBuffer>
 
     abstract write(
         serviceUUID: string|number,
@@ -612,7 +614,7 @@ export abstract class PostCube {
     abstract watchNotifications(
         serviceUUID: string|number,
         characteristicUUID: string|number,
-        listener: Listener<DataView>,
+        listener: Listener<DataView|ArrayBuffer>,
         timeoutMs?: number,
     ): Promise<Unwatch>
 }

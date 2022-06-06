@@ -25,9 +25,10 @@ export const sleep = (timeoutMs: number) => {
 }
 
 export const withTimeoutRace = async<Result>(
-    procedure: () => Result,
+    procedure: (resolve?: (result: Result) => any, reject?: Function) => Result,
     timeoutMs: number,
     timeoutError = bleErrors.timeout('Operation timed out'),
+    exitAfterProcedure: boolean = true,
 ): Promise<Result> => {
     const result = await Promise.race([
         new Promise<Result>(async(resolve, reject) => {
@@ -37,8 +38,11 @@ export const withTimeoutRace = async<Result>(
         }),
         new Promise<Result>(async(resolve, reject) => {
             try {
-                const result = await procedure()
-                resolve(result)
+                const result = await procedure(resolve, reject)
+
+                if (exitAfterProcedure) {
+                    resolve(result)
+                }
             } catch (err) {
                 reject(err)
             }
@@ -150,6 +154,14 @@ export const resolveVersionFromAvailableServices = (services: (string|number)[])
             return PostCubeVersion.v2
         }
     }
+
+    return null
+}
+
+export const resolveVersionFromAdvertisingData = (advertising: ArrayBuffer|object): PostCubeVersion => {
+    // TODO: Detect (see https://github.com/don/cordova-plugin-ble-central#peripheral-data for more info)
+    //       advertising be [ArrayBuffer on Android]
+    //       advertising be [object on iOS]
 
     return null
 }

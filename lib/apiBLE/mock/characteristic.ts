@@ -4,7 +4,7 @@ import { jSignal, Listener } from 'jsignal'
 import * as protocol from '../../protocol.pb'
 import { PostCubeLogger } from '../../logger'
 import {
-    PACKET_SIZE,
+    MAX_PACKET_SIZE,
     SERVICE_BATTERY_UUID,
     SERVICE_UUID,
     CHAR_BATTERY_LEVEL_UUID,
@@ -51,7 +51,7 @@ export const PostCubeMockCharacteristic = (postCubeMock: PostCubeMock, serviceUU
     const onCurrentValueChange: jSignal<DataView> = new jSignal<DataView>()
 
     let commandBuffer: number[][] = []
-    let currentValue: DataView = new DataView(new Uint8Array(PACKET_SIZE).buffer)
+    let currentValue: DataView = new DataView(new Uint8Array(MAX_PACKET_SIZE).buffer)
 
     if (serviceUUID === SERVICE_BATTERY_UUID && characteristicUUID === CHAR_BATTERY_LEVEL_UUID) {
         const batteryLevel = postCubeMock.deviceConfig.batteryLevel || 10 + Math.round(Math.random() * 50)

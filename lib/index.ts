@@ -17,6 +17,7 @@ export {
     parseSecretCode,
     parsePostCubeName,
     resolveVersionFromAvailableServices,
+    resolveVersionFromAdvertisingData,
     templater,
 } from './helpers'
 export { PostCubeLogger } from './logger'
@@ -126,11 +127,13 @@ export {
 } from './constants/box'
 export {
     PostCubeVersion,
+    MAX_PACKET_SIZE,
     PACKET_SIZE,
     PACKET_LAST_INDEX,
     PACKET_LAST_TRUE,
     PACKET_LAST_FALSE,
     COMMAND_ID_SIZE,
+    DEFAULT_TIMEOUT_SCAN,
     DEFAULT_TIMEOUT_CONNECT,
     DEFAULT_TIMEOUT_DISCONNECT,
     DEFAULT_TIMEOUT_IO,

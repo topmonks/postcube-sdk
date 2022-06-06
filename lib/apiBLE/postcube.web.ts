@@ -66,6 +66,11 @@ export const scanForPostCubes = async(
         DEPRECATED_SERVICE_UUID_16,
     ],
 ): Promise<ScanResult> => {
+    PostCubeLogger.warn(
+        { options, services },
+        `Invoked method scanForPostCubes is a polyfill on platform [${PostCubeWeb.PlatformName}]`,
+    )
+
     return {
         async stopScan() {},
         promise: requestPostCube(options.namePrefix, services).then(postCube => {
@@ -79,7 +84,7 @@ export const scanForPostCubes = async(
 export class PostCubeWeb extends PostCube {
     static PlatformName = 'WebBluetooth'
 
-    readonly device: BluetoothDevice
+    private device: BluetoothDevice
 
     private _version:                PostCubeVersion
     private _detectVersionOnConnect: boolean = true

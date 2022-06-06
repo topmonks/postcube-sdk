@@ -4,7 +4,7 @@ import { Buffer } from 'buffer'
 import * as protocol from '../protocol.pb'
 import { bleErrors } from '../errors'
 import {
-    PACKET_SIZE,
+    MAX_PACKET_SIZE,
     NONCE,
     PACKET_LAST_INDEX,
     PACKET_LAST_TRUE,
@@ -12,6 +12,7 @@ import {
     DEPRECATED_CHAR_RESULTS_INDEX,
     BOX_MAGIC,
 } from '../constants/bluetooth'
+import { PostCubeLogger } from '../logger'
 import {
     getFutureEpoch,
     parseSecretCode,
@@ -62,7 +63,7 @@ export interface EncodingOptions {
     encryptionStrategy?: EncodingEncryptionStrategy
 }
 
-export const splitCommandV1 = async(buffer: Uint8Array, chunkSize: number = PACKET_SIZE): Promise<Uint8Array[]> => {
+export const splitCommandV1 = async(buffer: Uint8Array, chunkSize: number = MAX_PACKET_SIZE): Promise<Uint8Array[]> => {
     const result: Uint8Array[] = []
 
     for (let offset = 0; offset < buffer.length; offset += chunkSize) {
@@ -203,28 +204,30 @@ export const encodeCommandV2 = async(command: Command, options: EncodingOptions 
 }
 
 export const encodeResultV2 = async(commandId: number, value?: number, errorCode?: number): Promise<Uint8Array> => {
-    const encodedResult = await protocol.encodeResult({ commandId, value, errorCode })
-    return encodedResult
+    return protocol.encodeResult({ commandId, value, errorCode })
 }
 
 export const chunkBufferV2 = async(buffer: ArrayBufferLike): Promise<DataView[]> => {
     const chunks: DataView[] = []
 
-    for (let index = 0; index < buffer.byteLength; index += PACKET_SIZE - 1) {
-        const dataView = new DataView(new ArrayBuffer(PACKET_SIZE))
+    for (let cursor = 0; cursor < buffer.byteLength; cursor += MAX_PACKET_SIZE - 1) {
+        const nextIndex = cursor + MAX_PACKET_SIZE - 1
+        const nextCursor = Math.min(buffer.byteLength, nextIndex)
+
+        const hasMore = nextIndex < buffer.byteLength
+        const chunk = new DataView(new ArrayBuffer(nextCursor - cursor))
 
         for (
-            let offset = 1, bufferOffset = index;
-            bufferOffset < Math.min(buffer.byteLength, index + PACKET_SIZE - 1);
+            let offset = 1, bufferOffset = cursor;
+            bufferOffset < nextCursor;
             offset++, bufferOffset++
         ) {
-            dataView.setUint8(offset, buffer[bufferOffset])
+            chunk.setUint8(offset, buffer[bufferOffset])
         }
 
-        const isLast = index + PACKET_SIZE - 1 < buffer.byteLength
-        dataView.setUint8(PACKET_LAST_INDEX, isLast ? PACKET_LAST_FALSE : PACKET_LAST_TRUE)
+        chunk.setUint8(PACKET_LAST_INDEX, hasMore ? PACKET_LAST_FALSE : PACKET_LAST_TRUE)
 
-        chunks.push(dataView)
+        chunks.push(chunk)
     }
 
     return chunks
@@ -235,20 +238,11 @@ export const parseBufferChunkV2 = async(chunk: DataView): Promise<{
     isLast: boolean
 }> => {
     const buffer: number[] = []
+    const isLast = chunk.getUint8(PACKET_LAST_INDEX) == PACKET_LAST_TRUE
 
-    let isLast: boolean = null
-    switch (chunk.getUint8(PACKET_LAST_INDEX)) {
-    case PACKET_LAST_TRUE:  isLast = true;  break
-    case PACKET_LAST_FALSE: isLast = false; break
-    }
-
-    for (let offset = 0; offset < PACKET_SIZE; offset++) {
+    for (let offset = 0; offset < Math.min(MAX_PACKET_SIZE, chunk.byteLength); offset++) {
         if (offset === PACKET_LAST_INDEX) {
             continue
-        }
-
-        if (offset === chunk.byteLength) {
-            break
         }
 
         buffer.push(chunk.getUint8(offset))

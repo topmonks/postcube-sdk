@@ -1,6 +1,6 @@
 {
   "name": "@topmonks/postcube",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "PostCube public SDK",
   "author": "TopMonks <info@topmonks.com>",
   "license": "EPL-2.0",
@@ -39,6 +39,7 @@
     "@capacitor/core": "^3.3.2",
     "buffer": "^6.0.3",
     "chacha": "^2.1.0",
+    "cordova-plugin-ble-central": "^1.4.4",
     "events": "^3.3.0",
     "javascript-state-machine": "^3.1.0",
     "joi": "^17.4.0",
