@@ -110,22 +110,25 @@ export class PostCubeWeb extends PostCube {
         this.device = device
 
         if (typeof this?.device?.watchAdvertisements === 'function') {
-            this.device.addEventListener('advertisementreceived', event =>{
+            this.device.addEventListener('advertisementreceived', event => {
                 this.handleAdvertisementReceived(event)
             })
 
             this.device.watchAdvertisements()
 
-            this._detectVersionOnConnect = false
+            // this._detectVersionOnConnect = false
         }
 
-        this.connect().then(async() => {
-            PostCubeLogger.info({}, this.tmpl(`Auto-connected to %id_platform%`))
+        this
+            .connect()
+            .then(async() => {
+                PostCubeLogger.info({}, this.tmpl(`Auto-connected to %id_platform%`))
 
-            await this.startResultNotificationsV1()
-        }).catch(err => {
-            PostCubeLogger.error({ err }, this.tmpl(`Failed to auto-connect to %id_platform%`))
-        })
+                await this.startResultNotificationsV1()
+            })
+            .catch(err => {
+                PostCubeLogger.error({ err }, this.tmpl(`Failed to auto-connect to %id_platform%`))
+            })
     }
 
     protected tmpl(string: string) {
@@ -143,9 +146,11 @@ export class PostCubeWeb extends PostCube {
     }
 
     private async handleAdvertisementReceived(event: Event) {
-        console.log(this.tmpl('Advertisement received on %id_platform%'))
-        console.log('event:', event)
-        // Detect version
+        PostCubeLogger.debug({ event }, this.tmpl('Advertisement received on %id_platform%'))
+
+        console.log('Advertisement received - postcube, event:', this, event)
+
+        // TODO: Detect version
     }
 
     private async getService(serviceUUID: string): Promise<BluetoothRemoteGATTService> {
@@ -188,7 +193,9 @@ export class PostCubeWeb extends PostCube {
         await withTimeoutRace(async() => {
             await this.device.gatt.connect()
 
-            this.device.gatt.device.addEventListener('gattserverdisconnected', this.handleGattServerDisconnected)
+            this.device.gatt.device.addEventListener('gattserverdisconnected', event => {
+                this.handleGattServerDisconnected(event)
+            })
 
             if (this._detectVersionOnConnect) {
                 const primaryServices = await this.device.gatt.getPrimaryServices()
