@@ -215,11 +215,11 @@ export class PostCubeWeb extends PostCube {
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(this.tmpl(`Disconnecting from %id_platform%`))
-
         if (!this.isConnected || this.activeOperations > 0) {
             return
         }
+
+        PostCubeLogger.debug(this.tmpl(`Disconnecting from %id_platform%`))
 
         await withTimeoutRace(async() => {
             await this.device.gatt.disconnect()
@@ -255,8 +255,8 @@ export class PostCubeWeb extends PostCube {
 
             // TODO: rewrite write
             // await characteristic.writeValueWithResponse(value)
-            // await characteristic.writeValueWithoutResponse(value)
-            await characteristic.writeValue(value)
+            await characteristic.writeValueWithoutResponse(value)
+            // await characteristic.writeValue(value)
         }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out writing value to %id_platform%`)))
     }
 
