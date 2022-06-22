@@ -200,7 +200,6 @@ export abstract class PostCube {
             throw bleErrors.unknownBLECharacteristic('writeCommandV1 has to have a characteristic specified');
         }
 
-
         const chunks = await splitCommandV1(new Uint8Array(command), MAX_PACKET_SIZE)
 
         PostCubeLogger.log(this.tmpl(`Sending command to PostCube %id% in ${chunks.length} packets %platform%`))

@@ -142,6 +142,10 @@ export class PostCubeWeb extends PostCube {
     private async handleGattServerDisconnected(event: Event) {
         PostCubeLogger.debug({ event }, this.tmpl(`Disconnected from %id_platform%`))
 
+        this._cachedServices = {}
+        this._cachedCharacteristics = {}
+        this._enabledNotifications = {}
+
         this.onChange.dispatch(this)
     }
 

@@ -97,18 +97,15 @@ const scanForPostCubes = async(options: ScanOptions = {}, mockConfig?: PostCubeM
     return platformMap[PostCubeBLE.platform].scanForPostCubes(_options, undefined, mockConfig)
 }
 
-let platform: Platform
+let platform = Platform.web
 
 export const PostCubeBLE: PostCubeBLE = {
     onChange: new jSignal<PostCubeBLE>(),
     onCubeDiscovered: new jSignal<PostCube>(),
     get platform(): Platform {
         if (!platform) {
-            const keys = Object.keys(platformMap)
-
-            if (keys.length > 0) {
-                platform = keys[0] as Platform
-            }
+            // error, perhaps?
+            return null
         }
 
         return platform
