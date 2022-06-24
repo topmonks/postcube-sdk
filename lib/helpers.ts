@@ -1,5 +1,6 @@
 
 import { chunk } from 'lodash'
+
 import {
     PostCubeVersion,
     DEPRECATED_SERVICE_UUID,
@@ -8,8 +9,8 @@ import {
     SERVICE_UUID_16,
     SERVICE_UUID_16_BASE_0,
 } from './constants/bluetooth'
-
 import { bleErrors } from './errors'
+import { PostCubeLogger } from './logger'
 
 export const uint32ToByteArray = (value: number): number[] => {
     return [
@@ -143,19 +144,26 @@ export const parsePostCubeName = (name: string): {
 }
 
 export const resolveVersionFromAvailableServices = (services: (string|number)[]): PostCubeVersion => {
+    let version: PostCubeVersion = null
+
+    iterator:
     for (const service of services) {
         switch (service) {
         case DEPRECATED_SERVICE_UUID:
         case DEPRECATED_SERVICE_UUID_16.toString():
-            return PostCubeVersion.v1
+            version = PostCubeVersion.v1
+            break iterator
         case SERVICE_UUID:
         case SERVICE_UUID_16_BASE_0:
         case SERVICE_UUID_16.toString():
-            return PostCubeVersion.v2
+            version = PostCubeVersion.v2
+            break iterator
         }
     }
 
-    return null
+    PostCubeLogger.debug({ services, version }, `Resolved version from services to be: ${String(version)}`)
+
+    return version
 }
 
 export const resolveVersionFromAdvertisingData = (advertising: ArrayBuffer|object): PostCubeVersion => {

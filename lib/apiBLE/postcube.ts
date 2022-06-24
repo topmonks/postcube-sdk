@@ -80,14 +80,35 @@ export abstract class PostCube {
     readonly isDev: boolean
 
     virtual: boolean
+    inactivityDisconnectTimeoutMs: number
 
     abstract readonly version: PostCubeVersion
     abstract readonly deviceId: string
     abstract readonly isConnected: boolean
 
+    private inactivityDisconnectTimeout // number|NodeJS.Timeout
+
     private _activeOperations = 0
-    get activeOperations(): number {
-        return this._activeOperations
+    private get activeOperations(): number { return this._activeOperations }
+    private set activeOperations(activeOperations: number) {
+        const renewInactivityDisconnectTimeout =
+            this.inactivityDisconnectTimeoutMs && activeOperations > this._activeOperations
+
+        clearTimeout(this.inactivityDisconnectTimeout)
+        this.inactivityDisconnectTimeout = null
+
+        this._activeOperations = activeOperations
+
+        if (renewInactivityDisconnectTimeout) {
+            this.inactivityDisconnectTimeout = setTimeout(() => {
+                PostCubeLogger.info({
+                    inactivityDisconnectTimeoutMs: this.inactivityDisconnectTimeoutMs,
+                    postCube: this,
+                }, this.tmpl(`Automatically disconnecting from PostCube %id% due to inactivity %platform%`))
+
+                this.disconnect()
+            }, this.inactivityDisconnectTimeoutMs)
+        }
     }
 
     constructor(name: string) {
@@ -107,17 +128,17 @@ export abstract class PostCube {
     }
 
     async batchCommands<Result>(procedure: () => Result, options?: BatchOptions): Promise<Result> {
-        let _success = true, _err
+        let success = true, err
 
         try {
-            if (++this._activeOperations < 2) {
+            if (++this.activeOperations < 2) {
                 await this.connect()
             }
 
             return await procedure()
-        } catch (err) {
-            _success = false
-            _err = err
+        } catch (_err) {
+            success = false
+            err = _err
 
             PostCubeLogger.error({
                 activeTransactions: this.activeOperations,
@@ -126,11 +147,11 @@ export abstract class PostCube {
 
             throw err
         } finally {
-            --this._activeOperations
+            --this.activeOperations
 
             if (
-                typeof options?.shouldDisconnect !== 'function'
-                || await options.shouldDisconnect(_success, _err)
+                typeof options?.shouldDisconnect === 'function'
+                && await options.shouldDisconnect(success, err)
             ) {
                 await this.disconnect()
             }
@@ -196,6 +217,8 @@ export abstract class PostCube {
     }
 
     private async writeCommandV1(command: ArrayBufferLike, characteristicUUID: string|number): Promise<void> {
+        // try {
+        //     ++this.activeOperations
         if (!characteristicUUID) {
             throw bleErrors.unknownBLECharacteristic('writeCommandV1 has to have a characteristic specified');
         }
@@ -226,6 +249,9 @@ export abstract class PostCube {
                 throw err
             }
         }
+        // } finally {
+        //     --this.activeOperations
+        // }
     }
 
     private async writeCommandV2(command: ArrayBufferLike): Promise<void> {
@@ -262,8 +288,8 @@ export abstract class PostCube {
         const result = await this.batchCommands(() => {
             let unwatch: Unwatch
 
-            return withTimeoutRace(() =>
-                new Promise<number>(async(resolve, reject) => {
+            return withTimeoutRace(
+                () => new Promise<number>(async(resolve, reject) => {
                     const handleNotification = async(value) => {
                         PostCubeLogger.log({
                             value,
@@ -291,7 +317,11 @@ export abstract class PostCube {
                     } catch (err) {
                         reject(err)
                     }
-                }), DEFAULT_TIMEOUT_I_AND_O)
+                }),
+                DEFAULT_TIMEOUT_I_AND_O,
+                bleErrors.timeout('writeCommandAndReadResultV1 timed out'),
+                false,
+            )
         })
 
         return result

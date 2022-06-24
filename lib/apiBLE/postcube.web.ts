@@ -92,6 +92,8 @@ export class PostCubeWeb extends PostCube {
     private _cachedCharacteristics:  Record<string, BluetoothRemoteGATTCharacteristic> = {}
     private _enabledNotifications:   Record<string, boolean> = {}
 
+    inactivityDisconnectTimeoutMs = 60 * 1000 // 1m
+
     get deviceId(): string {
         return this.device?.id
     }
@@ -296,7 +298,7 @@ export class PostCubeWeb extends PostCube {
         )
 
         if (!this._enabledNotifications[`${serviceUUID}:${characteristicUUID}`]) {
-            this.startNotifications(serviceUUID, characteristicUUID) // , timeoutMs)
+            this.startNotifications(serviceUUID, characteristicUUID, Math.round(timeoutMs * .9))
         }
 
         const handleCharacteristicValueChanged = event => {
