@@ -89,8 +89,8 @@ export abstract class PostCube {
     private inactivityDisconnectTimeout // number|NodeJS.Timeout
 
     private _activeOperations = 0
-    private get activeOperations(): number { return this._activeOperations }
-    private set activeOperations(activeOperations: number) {
+    protected get activeOperations(): number { return this._activeOperations }
+    protected set activeOperations(activeOperations: number) {
         const renewInactivityDisconnectTimeout =
             this.inactivityDisconnectTimeoutMs && activeOperations > this._activeOperations
 
