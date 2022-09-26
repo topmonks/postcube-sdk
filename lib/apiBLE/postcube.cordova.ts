@@ -207,7 +207,7 @@ export class PostCubeCordova extends PostCube {
     }
 
     // private handleDisconnect() {
-    //     PostCubeLogger.debug({ event }, this.tmpl(`Disconnected from %id_platform%`))
+    //     PostCubeLogger.debug({ event }, this?.tmpl(`Disconnected from %id_platform%`))
 
     //     this.isConnectedAsync()
     //         .then(isConnected => this._isConnected = isConnected)
@@ -215,10 +215,10 @@ export class PostCubeCordova extends PostCube {
     // }
 
     async connect(timeoutMs: number = DEFAULT_TIMEOUT_CONNECT): Promise<void> {
-        PostCubeLogger.debug(this.tmpl(`Connecting to %id_platform%`))
+        PostCubeLogger.debug(this?.tmpl(`Connecting to %id_platform%`))
 
         if (this.isConnected) {
-            PostCubeLogger.warn({ postCube: this }, this.tmpl(`Already connected to %id_platform%`))
+            PostCubeLogger.warn({ postCube: this }, this?.tmpl(`Already connected to %id_platform%`))
             return
         }
 
@@ -226,7 +226,7 @@ export class PostCubeCordova extends PostCube {
             ble.connect(this.deviceId, resolve, reject)
 
             return null
-        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out connecting to %id_platform%`)), false)
+        }, timeoutMs, bleErrors.timeout(this?.tmpl(`Timed out connecting to %id_platform%`)), false)
 
         this._isConnected = await this.isConnectedAsync()
 
@@ -238,7 +238,7 @@ export class PostCubeCordova extends PostCube {
     }
 
     async disconnect(timeoutMs: number = DEFAULT_TIMEOUT_DISCONNECT): Promise<void> {
-        PostCubeLogger.debug(this.tmpl(`Disconnecting from %id_platform%`))
+        PostCubeLogger.debug(this?.tmpl(`Disconnecting from %id_platform%`))
 
         if (!this.isConnected || this.activeOperations > 0) {
             return
@@ -246,7 +246,7 @@ export class PostCubeCordova extends PostCube {
 
         await withTimeoutRace(async(resolve, reject) => {
             ble.disconnect(this.deviceId, resolve, reject)
-        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out disconnecting from %id_platform%`)), false)
+        }, timeoutMs, bleErrors.timeout(this?.tmpl(`Timed out disconnecting from %id_platform%`)), false)
 
         this._isConnected = await this.isConnectedAsync()
 
@@ -258,13 +258,13 @@ export class PostCubeCordova extends PostCube {
         characteristicUUID: string,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<DataView|ArrayBuffer> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, this.tmpl(`Reading value from %id_platform%`))
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID }, this?.tmpl(`Reading value from %id_platform%`))
 
         const value = await withTimeoutRace<ArrayBuffer>((resolve, reject) => {
             ble.read(this.deviceId, serviceUUID, characteristicUUID, resolve, reject)
 
             return null
-        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out reading value from %id_platform%`)), false)
+        }, timeoutMs, bleErrors.timeout(this?.tmpl(`Timed out reading value from %id_platform%`)), false)
 
         return value
     }
@@ -275,7 +275,7 @@ export class PostCubeCordova extends PostCube {
         value: DataView,
         timeoutMs: number = DEFAULT_TIMEOUT_IO,
     ): Promise<void> {
-        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, this.tmpl(`Writing value to PostCube %id_platform%`))
+        PostCubeLogger.debug({ serviceUUID, characteristicUUID, value }, this?.tmpl(`Writing value to PostCube %id_platform%`))
 
         const valueArrayBuffer = new Uint8Array(
             times(value.byteLength, offset => value.getUint8(offset)),
@@ -285,7 +285,7 @@ export class PostCubeCordova extends PostCube {
             ble.write(this.deviceId, serviceUUID, characteristicUUID, valueArrayBuffer, resolve, reject)
 
             return null
-        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out writing value to %id_platform%`)), false)
+        }, timeoutMs, bleErrors.timeout(this?.tmpl(`Timed out writing value to %id_platform%`)), false)
     }
 
     async startNotifications(
@@ -295,7 +295,7 @@ export class PostCubeCordova extends PostCube {
     ) {
         PostCubeLogger.info(
             { serviceUUID, characteristicUUID, timeoutMs },
-            this.tmpl(`Ignoring startNotifications on PostCube %id%; Unnecessary on %platform%`),
+            this?.tmpl(`Ignoring startNotifications on PostCube %id%; Unnecessary on %platform%`),
         )
     }
 
@@ -307,7 +307,7 @@ export class PostCubeCordova extends PostCube {
     ): Promise<Unwatch> {
         PostCubeLogger.debug(
             { serviceUUID, characteristicUUID },
-            this.tmpl(`Watching for notifications on %id_platform%`),
+            this?.tmpl(`Watching for notifications on %id_platform%`),
         )
 
         const handleCharacteristicValueChanged = buffer => {
@@ -328,7 +328,7 @@ export class PostCubeCordova extends PostCube {
 
             unwatch = () => new Promise((resolve, reject) =>
                 ble.stopNotification(this.deviceId, serviceUUID, characteristicUUID, resolve, reject))
-        }, timeoutMs, bleErrors.timeout(this.tmpl(`Timed out adding value change listener on %id_platform%`)))
+        }, timeoutMs, bleErrors.timeout(this?.tmpl(`Timed out adding value change listener on %id_platform%`)))
 
         return unwatch
     }

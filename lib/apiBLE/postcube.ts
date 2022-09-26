@@ -104,7 +104,7 @@ export abstract class PostCube {
                 PostCubeLogger.info({
                     inactivityDisconnectTimeoutMs: this.inactivityDisconnectTimeoutMs,
                     postCube: this,
-                }, this.tmpl(`Automatically disconnecting from PostCube %id% due to inactivity %platform%`))
+                }, this?.tmpl(`Automatically disconnecting from PostCube %id% due to inactivity %platform%`))
 
                 this.disconnect()
             }, this.inactivityDisconnectTimeoutMs)
@@ -143,7 +143,7 @@ export abstract class PostCube {
             PostCubeLogger.error({
                 activeTransactions: this.activeOperations,
                 postCube: this,
-            }, this.tmpl(`Failed to execute batch of commands on %id_platform%`))
+            }, this?.tmpl(`Failed to execute batch of commands on %id_platform%`))
 
             throw err
         } finally {
@@ -174,7 +174,7 @@ export abstract class PostCube {
     }
 
     private async readBatteryV1(): Promise<number> {
-        PostCubeLogger.debug({ postCube: this }, this.tmpl(`readBatteryV1 on %id_platform%`))
+        PostCubeLogger.debug({ postCube: this }, this?.tmpl(`readBatteryV1 on %id_platform%`))
 
         const value = await this.read('battery_service', 'battery_level')
 
@@ -183,7 +183,7 @@ export abstract class PostCube {
             value.getUint8(0) :
             value[0]
 
-        PostCubeLogger.info({ batteryPercent, value }, this.tmpl(`Read battery result from %id_platform%`))
+        PostCubeLogger.info({ batteryPercent, value }, this?.tmpl(`Read battery result from %id_platform%`))
 
         return batteryPercent
     }
@@ -191,7 +191,7 @@ export abstract class PostCube {
     private async readBatteryV2(): Promise<number> {
         PostCubeLogger.warn(
             { postCube: this },
-            this.tmpl(`readBatteryV2 is not implemented; Mocking value from PostCube %id% for now %platform%`),
+            this?.tmpl(`readBatteryV2 is not implemented; Mocking value from PostCube %id% for now %platform%`),
         )
 
         return LOW_BATTERY_THRESHOLD_CENT + 1
@@ -225,7 +225,7 @@ export abstract class PostCube {
 
         const chunks = await splitCommandV1(new Uint8Array(command), MAX_PACKET_SIZE)
 
-        PostCubeLogger.log(this.tmpl(`Sending command to PostCube %id% in ${chunks.length} packets %platform%`))
+        PostCubeLogger.log(this?.tmpl(`Sending command to PostCube %id% in ${chunks.length} packets %platform%`))
 
         for (const index in chunks) {
             const packetDataView = new DataView(chunks[index].buffer)
@@ -237,14 +237,14 @@ export abstract class PostCube {
                     characteristicUUID,
                     packetDataView,
                     packetUint8Array: chunks[index],
-                }, this.tmpl(`Packet ${Number(index) + 1}/${chunks.length} has been sent to %id_platform%`))
+                }, this?.tmpl(`Packet ${Number(index) + 1}/${chunks.length} has been sent to %id_platform%`))
             } catch (err) {
                 PostCubeLogger.error({
                     err,
                     characteristicUUID,
                     packetDataView,
                     packetUint8Array: chunks[index],
-                }, this.tmpl(`Packet ${Number(index) + 1}/${chunks.length} failed to be written to %id_platform%`))
+                }, this?.tmpl(`Packet ${Number(index) + 1}/${chunks.length} failed to be written to %id_platform%`))
 
                 throw err
             }
@@ -294,14 +294,14 @@ export abstract class PostCube {
                         PostCubeLogger.log({
                             value,
                             version: this.version,
-                        }, this.tmpl(`Receiving result from %id_platform%`))
+                        }, this?.tmpl(`Receiving result from %id_platform%`))
 
                         const parsedResult = await parseResultV1(value, characteristicUUID)
 
                         PostCubeLogger.log({
                             parsedResult,
                             version: this.version,
-                        }, this.tmpl(`Result received from %id_platform%`))
+                        }, this?.tmpl(`Result received from %id_platform%`))
 
                         if (typeof unwatch === 'function') {
                             await unwatch()
@@ -339,7 +339,7 @@ export abstract class PostCube {
                 PostCubeLogger.log({
                     buffer, isLast,
                     version: this.version,
-                }, this.tmpl(`Receiving result packet from %id_platform%`))
+                }, this?.tmpl(`Receiving result packet from %id_platform%`))
 
                 chunks.push(buffer)
 
@@ -350,7 +350,7 @@ export abstract class PostCube {
                         PostCubeLogger.log({
                             result,
                             version: this.version,
-                        }, this.tmpl(`Result received from PostCube %id% has been decoded %platform%`))
+                        }, this?.tmpl(`Result received from PostCube %id% has been decoded %platform%`))
                         resolve(result)
                     }).catch(reject)
                 }
@@ -369,7 +369,7 @@ export abstract class PostCube {
         PostCubeLogger.debug({
             timestamp,
             version: this.version,
-        }, this.tmpl(`writeSyncTime to %id_platform%`))
+        }, this?.tmpl(`writeSyncTime to %id_platform%`))
 
         const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
 
@@ -381,7 +381,7 @@ export abstract class PostCube {
                 const encrypted = await createCommandV1(privateKey, publicKey, Math.floor(Date.now() / 1000), [])
 
                 if (isNaN(keyIndex)) {
-                    PostCubeLogger.warn({ timestamp, keyIndex }, this.tmpl(`Cannot writeSyncTime to PostCube %id% without keyIndex %platform%`))
+                    PostCubeLogger.warn({ timestamp, keyIndex }, this?.tmpl(`Cannot writeSyncTime to PostCube %id% without keyIndex %platform%`))
                     return
                 }
 
@@ -404,11 +404,11 @@ export abstract class PostCube {
                 })
                 const result = await this.writeCommandAndReadResultV2(command)
                 if (result.value === RES_OK) {
-                    PostCubeLogger.debug({ timestamp }, this.tmpl(`writeSyncTime was successfully executed on %id_platform%`))
+                    PostCubeLogger.debug({ timestamp }, this?.tmpl(`writeSyncTime was successfully executed on %id_platform%`))
                     return
                 }
 
-                PostCubeLogger.error({ timestamp, result }, this.tmpl(`writeSyncTime failed to execute on %id_platform%`))
+                PostCubeLogger.error({ timestamp, result }, this?.tmpl(`writeSyncTime failed to execute on %id_platform%`))
                 throw RESPONSE_MESSAGES[result.value]
         }
 
@@ -419,7 +419,7 @@ export abstract class PostCube {
         PostCubeLogger.debug({
             lockId,
             version: this.version,
-        }, this.tmpl(`writeUnlock to %id_platform%`))
+        }, this?.tmpl(`writeUnlock to %id_platform%`))
 
         const { privateKey, publicKey } = await PostCube.keys.getDeviceKeyPair()
         const keyIndex = await PostCube.keys.getDeviceKeyIndex(this.id)
@@ -428,7 +428,7 @@ export abstract class PostCube {
         switch (this.version) {
             case PostCubeVersion.v1:
                 if (lockId > 0) {
-                    PostCubeLogger.warn({ lockId }, this.tmpl(`Attempting to create unlock command for multibox partition on PostCube V1 %id%; lockId will be ignored`))
+                    PostCubeLogger.warn({ lockId }, this?.tmpl(`Attempting to create unlock command for multibox partition on PostCube V1 %id%; lockId will be ignored`))
                 }
 
                 const encrypted = await createCommandV1(privateKey, publicKey, Math.floor((Date.now() + 60000) / 1000), [])
@@ -455,7 +455,7 @@ export abstract class PostCube {
                     PostCubeLogger.debug({
                         lockId,
                         result: resultV2,
-                    }, this.tmpl(`writeUnlock was successfully executed on %id_platform%`))
+                    }, this?.tmpl(`writeUnlock was successfully executed on %id_platform%`))
 
                     return resultV2.value
                 }
@@ -463,7 +463,7 @@ export abstract class PostCube {
                 PostCubeLogger.error({
                     lockId,
                     result: resultV2,
-                }, this.tmpl(`writeUnlock failed to execute on %id_platform%`))
+                }, this?.tmpl(`writeUnlock failed to execute on %id_platform%`))
 
                 throw RESPONSE_MESSAGES[resultV2.value]
         }
@@ -480,7 +480,7 @@ export abstract class PostCube {
         PostCubeLogger.debug({
             secretCode, keyIndex, publicKey, expireAt,
             version: this.version,
-        }, this.tmpl(`writeDeviceKey to %id_platform%`))
+        }, this?.tmpl(`writeDeviceKey to %id_platform%`))
 
         switch (this.version) {
             case PostCubeVersion.v1:
@@ -520,7 +520,7 @@ export abstract class PostCube {
                     PostCubeLogger.debug({
                         secretCode, keyIndex, publicKey, expireAt,
                         result: resultV2,
-                    }, this.tmpl(`writeSetKey was successfully executed on %id_platform%`))
+                    }, this?.tmpl(`writeSetKey was successfully executed on %id_platform%`))
 
                     return resultV2.value
                 }
@@ -528,19 +528,18 @@ export abstract class PostCube {
                 PostCubeLogger.error({
                     secretCode, keyIndex, publicKey, expireAt,
                     result: resultV2,
-                }, this.tmpl(`writeSetKey failed to execute on %id_platform%`))
+                }, this?.tmpl(`writeSetKey failed to execute on %id_platform%`))
 
                 throw RESPONSE_MESSAGES[resultV2.value]
         }
 
-        throw bleErrors.notSupported('Invalid PostCube Version')
     }
 
     public async writeAccountKey(publicKey: Uint8Array|number[], secretCode: string): Promise<undefined|number> {
         PostCubeLogger.debug({
             publicKey, secretCode,
             version: this.version,
-        }, this.tmpl(`writeAccountKey to %id_platform%`))
+        }, this?.tmpl(`writeAccountKey to %id_platform%`))
 
         switch (this.version) {
             case PostCubeVersion.v1:
@@ -572,7 +571,7 @@ export abstract class PostCube {
     public async writeFactoryReset(): Promise<undefined|number> {
         PostCubeLogger.debug({
             version: this.version,
-        }, this.tmpl(`writeFactoryReset to %id_platform%`))
+        }, this?.tmpl(`writeFactoryReset to %id_platform%`))
 
         switch (this.version) {
             case PostCubeVersion.v1:
@@ -600,14 +599,14 @@ export abstract class PostCube {
                 if (resultV2.value === RES_OK) {
                     PostCubeLogger.debug({
                         result: resultV2,
-                    }, this.tmpl(`writeFactoryReset was successfully executed on %id_platform%`))
+                    }, this?.tmpl(`writeFactoryReset was successfully executed on %id_platform%`))
 
                     return resultV2.value
                 }
 
                 PostCubeLogger.error({
                     result: resultV2,
-                }, this.tmpl(`writeFactoryReset failed to execute on %id_platform%`))
+                }, this?.tmpl(`writeFactoryReset failed to execute on %id_platform%`))
 
                 throw RESPONSE_MESSAGES[resultV2.value]
         }
